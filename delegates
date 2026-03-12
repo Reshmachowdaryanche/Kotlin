@@ -1,4 +1,4 @@
-# Delegation in Kotlin
+#Delegation in Kotlin
 
 Delegation is a **design pattern** where a class **delegates the responsibility of performing a task to another object** instead of implementing it itself.
 
