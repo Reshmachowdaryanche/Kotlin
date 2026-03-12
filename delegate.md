@@ -1,1 +1,230 @@
 
+# Delegation in Kotlin
+
+Delegation is a **design pattern** where a class **delegates the responsibility of performing a task to another object** instead of implementing it itself.
+
+Kotlin provides **built-in support for delegation** using the `by` keyword.
+
+---
+
+## 1. Why Delegation?
+
+Delegation helps to:
+
+* Reduce **boilerplate code**
+* Improve **code reuse**
+* Follow **composition over inheritance**
+* Keep classes **small and maintainable**
+
+Instead of implementing functionality inside a class, we **forward the work to another object**.
+
+### Concept
+
+```
+Client → Class A → Delegate Class → Work Done
+```
+
+---
+
+## 2. Manual Delegation
+
+```kotlin
+interface Engine {
+    fun start()
+}
+
+class PetrolEngine : Engine {
+    override fun start() {
+        println("Engine started")
+    }
+}
+
+class Car : Engine {
+
+    private val engine = PetrolEngine()
+
+    override fun start() {
+        engine.start()
+    }
+}
+```
+
+### Flow
+
+```
+Car.start()
+   ↓
+engine.start()
+```
+
+Here **Car forwards the call manually** to the `engine`.
+
+---
+
+## 3. Using Kotlin Delegation (`by`)
+
+Kotlin allows us to simplify manual delegation using the **`by` keyword**.
+
+```kotlin
+interface Engine {
+    fun start()
+}
+
+class PetrolEngine : Engine {
+    override fun start() {
+        println("Engine started")
+    }
+}
+
+class Car(engine: Engine) : Engine by engine
+```
+
+Now Kotlin **automatically delegates** the implementation.
+
+---
+
+## 4. Usage
+
+```kotlin
+fun main() {
+    val car = Car(PetrolEngine())
+    car.start()
+}
+```
+
+### Output
+
+```
+Engine started
+```
+
+---
+
+## 5. What Kotlin Does Internally
+
+Kotlin automatically generates code similar to this:
+
+```kotlin
+class Car(private val engine: Engine) : Engine {
+
+    override fun start() {
+        engine.start()
+    }
+}
+```
+
+So you **don't need to write the forwarding code manually**.
+
+---
+
+## 6. Execution Flow
+
+```
+Car.start()
+     ↓
+Delegated to
+     ↓
+PetrolEngine.start()
+```
+
+---
+
+## 7. Slightly More Realistic Example
+
+```kotlin
+interface Engine {
+    fun start()
+}
+
+class PetrolEngine : Engine {
+    override fun start() {
+        println("Petrol engine started")
+    }
+}
+
+class ElectricEngine : Engine {
+    override fun start() {
+        println("Electric engine started")
+    }
+}
+
+class Car(engine: Engine) : Engine by engine
+```
+
+### Usage
+
+```kotlin
+val petrolCar = Car(PetrolEngine())
+petrolCar.start()
+
+val electricCar = Car(ElectricEngine())
+electricCar.start()
+```
+
+### Output
+
+```
+Petrol engine started
+Electric engine started
+```
+
+Now `Car` **delegates engine behavior to whichever engine you provide**.
+
+---
+
+## 8. Key Idea
+
+Instead of writing:
+
+```kotlin
+override fun start() {
+    engine.start()
+}
+```
+
+Kotlin allows you to simply write:
+
+```kotlin
+: Engine by engine
+```
+
+---
+
+## 9. Rule to Remember
+
+Whenever you see:
+
+```
+: Interface by object
+```
+
+It means:
+
+> **This class implements the interface but delegates the work to another object.**
+
+Conceptually:
+
+```
+Class → Implements Interface
+        ↓
+Delegates implementation to another object
+```
+
+---
+
+## Summary
+
+Delegation in Kotlin:
+
+* Reduces **boilerplate code**
+* Encourages **composition over inheritance**
+* Improves **code maintainability**
+* Uses the powerful **`by` keyword**
+
+Example:
+
+```kotlin
+class Car(engine: Engine) : Engine by engine
+```
+
+This means **Car delegates all `Engine` functionality to the provided engine object**.
