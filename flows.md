@@ -172,11 +172,11 @@ fun HomeScreen() {
 }
 ```
 
-SharedFlow is a general-purpose hot flow that can emit events or shared data to multiple subscribers.
-Unlike StateFlow, SharedFlow is highly configurable, allowing you to control the number of past emissions that new subscribers will receive (replay) and set a buffer to handle emissions when there are no active collectors.
-SharedFlow does not hold a single current value. Instead, it broadcasts emissions to all subscribers.
-Allows you to define a buffer for values, which can prevent emissions from being lost if there are no active collectors or if collectors are slow.
-Best for representing events or streams of data that do not represent a continuous state (such as notifications, one-time actions, or events that multiple subscribers might need).
+- SharedFlow is a general-purpose hot flow that can emit events or shared data to multiple subscribers.
+- Unlike StateFlow, SharedFlow is highly configurable, allowing you to control the number of past emissions that new subscribers will receive (replay) and set a buffer to handle emissions when there are no active collectors.
+- SharedFlow does not hold a single current value. Instead, it broadcasts emissions to all subscribers.
+- Allows you to define a buffer for values, which can prevent emissions from being lost if there are no active collectors or if collectors are slow.
+- Best for representing events or streams of data that do not represent a continuous state (such as notifications, one-time actions, or events that multiple subscribers might need).
 
 ```class HomeViewModel : ViewModel() {
     private val _events = MutableSharedFlow<Event>() // private mutable shared flow
@@ -225,11 +225,11 @@ fun HomeScreen() {
 }
 ```
 
-# Replay vs Buffer in SharedFlow
+### Replay vs Buffer in SharedFlow
 
 ---
 
-# 🧠 Core Difference (One Line)
+### 🧠 Core Difference (One Line)
 
 ```text
 Replay → for NEW subscribers (past values)
@@ -239,7 +239,7 @@ Buffer → for CURRENT flow (handling slow/no collectors)
 
 ---
 
-# 🔁 1️⃣ Replay (Past Values)
+### 🔁 1️⃣ Replay (Past Values)
 
 👉 Replay stores previous emissions and gives them to **new collectors**
 
@@ -249,7 +249,7 @@ val flow = MutableSharedFlow<Int>(replay = 2)
 
 ---
 
-## ✅ What happens:
+### ✅ What happens:
 
 * Emit: `1, 2, 3`
 * New collector joins → gets: `2, 3`
@@ -258,14 +258,14 @@ val flow = MutableSharedFlow<Int>(replay = 2)
 
 ---
 
-## 🎯 Purpose:
+### 🎯 Purpose:
 
 * Help **late subscribers**
 * Useful when new observers should see **recent history**
 
 ---
 
-# 🧺 2️⃣ Buffer (`extraBufferCapacity`)
+### 🧺 2️⃣ Buffer (`extraBufferCapacity`)
 
 👉 Buffer stores values when:
 
@@ -281,7 +281,7 @@ val flow = MutableSharedFlow<Int>(
 
 ---
 
-## ✅ What happens:
+### ✅ What happens:
 
 * Emit values even if no one is collecting
 * Values are temporarily stored
@@ -290,14 +290,14 @@ val flow = MutableSharedFlow<Int>(
 
 ---
 
-## 🎯 Purpose:
+### 🎯 Purpose:
 
 * Handle **backpressure**
 * Avoid losing values when system is busy
 
 ---
 
-# 🔥 Final Mental Model
+### 🔥 Final Mental Model
 
 ```text
 Replay → store past for future subscribers
@@ -307,7 +307,7 @@ Buffer → store present for slow consumers
 
 ---
 
-# ⚡ Quick Comparison
+### ⚡ Quick Comparison
 
 | Feature  | Replay           | Buffer                |
 | -------- | ---------------- | --------------------- |
@@ -317,7 +317,7 @@ Buffer → store present for slow consumers
 
 ---
 
-# 🧠 Summary
+### 🧠 Summary
 
 * `replay` → for **new collectors**
 * `buffer` → for **current flow handling**
