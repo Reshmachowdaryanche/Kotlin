@@ -27,7 +27,6 @@ Unlike threads:
 - Multiple coroutines can share the same thread
 - They consume significantly less memory
 
----
 
 # Key Advantages of Coroutines
 
