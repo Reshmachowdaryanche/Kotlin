@@ -1,5 +1,4 @@
 # Coroutines and Channels
----
 
 # Overview
 
@@ -322,31 +321,27 @@ This ensures:
 
 Coroutines suspend instead of blocking threads.
 
----
 
 ## Lightweight
 
 Thousands of coroutines can run efficiently.
 
----
 
 ## Readable Code
 
 Asynchronous code looks sequential and easier to understand.
 
----
 
 ## Better Performance
 
 Threads are utilized efficiently.
 
----
+
 
 ## Easier Error Handling
 
 Structured concurrency simplifies cancellation and exception management.
 
----
 
 # Common Coroutine Builders
 
@@ -360,7 +355,6 @@ launch {
 }
 ```
 
----
 
 ## `async`
 
@@ -374,7 +368,6 @@ val result = async {
 result.await()
 ```
 
----
 
 # Real-World Android Usage
 
@@ -387,7 +380,6 @@ Coroutines are heavily used in Android for:
 - Repository pattern
 - ViewModel async operations
 
----
 
 # Android Architecture Example
 
@@ -401,7 +393,6 @@ Network / Database
 
 Coroutines handle asynchronous operations between layers efficiently.
 
----
 
 # Main Takeaways
 
