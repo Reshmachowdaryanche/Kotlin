@@ -115,7 +115,6 @@ To create and run a coroutine in Kotlin, you need a few important components:
 - **Dispatcher**  
   A dispatcher decides which thread or thread pool the coroutine should run on, such as `Dispatchers.IO` or `Dispatchers.Default`.
 
----
 
 # Basic Coroutine Example
 
@@ -151,7 +150,6 @@ Coroutine builders are special functions used to create and manage coroutines in
 
 They define how a coroutine starts, executes, and handles its result.
 
----
 
 ## launch()
 
@@ -180,7 +178,6 @@ launch {
 - Suitable for background operations
 - Does not return a result
 
----
 
 ## async()
 
@@ -213,7 +210,6 @@ println(result.await())
 - Result is accessed using `await()`
 - Non-blocking
 
----
 
 ## withContext()
 
@@ -243,7 +239,6 @@ withContext(Dispatchers.IO) {
 - `Dispatchers.Main`  
   Used for updating UI components on the main thread.
 
----
 
 ## coroutineScope()
 
@@ -327,7 +322,7 @@ They help separate:
 - Network operations
 - Background processing
 
----
+
 
 ## Types of Dispatchers
 
@@ -339,7 +334,6 @@ Used for:
 - UI updates
 - User interaction handling
 
----
 
 ### `Dispatchers.IO`
 
@@ -350,7 +344,6 @@ Used for:
 - Database access
 - File operations
 
----
 
 ### `Dispatchers.Default`
 
@@ -361,7 +354,6 @@ Used for:
 - Sorting
 - Heavy calculations
 
----
 
 ### `Dispatchers.Unconfined`
 
@@ -369,7 +361,6 @@ Starts coroutine in the current thread but may resume in another thread after su
 
 Mostly used for advanced coroutine scenarios and debugging.
 
----
 
 # Example Using Dispatchers
 
