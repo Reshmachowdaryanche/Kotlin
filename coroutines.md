@@ -1,4 +1,5 @@
 # Kotlin Coroutines & Concurrency
+
 ---
 
 # Overview
@@ -45,7 +46,7 @@ Unlike threads:
 
 - **Dispatcher Support**  
   Coroutines use dispatchers to control thread execution, allowing flexible switching between background threads, IO operations, and the main UI thread.
-  
+
 ---
 
 # Suspending Functions
@@ -149,10 +150,13 @@ suspend fun main() {
 
 # Coroutine Builders
 
-Coroutine builders are special functions used to create and manage coroutines in Kotlin.  
+Coroutine builders are special functions used to create and manage coroutines in Kotlin.
+
 They define how a coroutine starts, executes, and handles its result.
 
-# launch()
+---
+
+## launch()
 
 The `launch()` coroutine builder is used when you want to execute a task asynchronously without returning any result.
 
@@ -163,7 +167,7 @@ It is commonly used for:
 
 The `launch()` function starts a new coroutine and immediately continues execution without blocking the current thread.
 
-## Example
+### Example
 
 ```kotlin
 launch {
@@ -172,7 +176,7 @@ launch {
 }
 ```
 
-## Characteristics
+### Characteristics
 
 - Non-blocking execution
 - Returns a `Job`
@@ -181,11 +185,12 @@ launch {
 
 ---
 
-# async()
+## async()
 
 The `async()` coroutine builder is used when a coroutine needs to return a value.
 
-Unlike `launch()`, it returns a `Deferred<T>` object, which represents a future result.  
+Unlike `launch()`, it returns a `Deferred<T>` object, which represents a future result.
+
 You can retrieve the result using the `await()` function.
 
 It is commonly used for:
@@ -193,7 +198,7 @@ It is commonly used for:
 - Concurrent calculations
 - Data fetching operations
 
-## Example
+### Example
 
 ```kotlin
 val result = async {
@@ -204,7 +209,7 @@ val result = async {
 println(result.await())
 ```
 
-## Characteristics
+### Characteristics
 
 - Returns `Deferred<T>`
 - Supports parallel execution
@@ -213,7 +218,7 @@ println(result.await())
 
 ---
 
-# withContext()
+## withContext()
 
 The `withContext()` function is used to switch coroutine execution from one dispatcher or thread context to another.
 
@@ -222,7 +227,7 @@ It is mainly used to:
 - Execute database operations
 - Move heavy tasks off the main thread
 
-## Example
+### Example
 
 ```kotlin
 withContext(Dispatchers.IO) {
@@ -230,7 +235,7 @@ withContext(Dispatchers.IO) {
 }
 ```
 
-## Common Dispatcher Usage
+### Common Dispatcher Usage
 
 - `Dispatchers.IO`  
   Used for network requests, database operations, and file handling.
@@ -243,13 +248,13 @@ withContext(Dispatchers.IO) {
 
 ---
 
-# coroutineScope()
+## coroutineScope()
 
 The `coroutineScope()` function creates a new coroutine scope and ensures that all child coroutines complete before the parent coroutine finishes.
 
 It supports structured concurrency and proper lifecycle management.
 
-## Example
+### Example
 
 ```kotlin
 coroutineScope {
@@ -263,7 +268,7 @@ coroutineScope {
 }
 ```
 
-## Key Points
+### Key Points
 
 - Waits for all child coroutines to complete
 - Maintains structured concurrency
@@ -308,7 +313,8 @@ Every coroutine must run inside a scope.
 - Manages cancellation
 - Defines dispatcher configuration
 
-Common coroutine scopes in Android:
+### Common Coroutine Scopes in Android
+
 - `viewModelScope`
 - `lifecycleScope`
 - `GlobalScope` (not recommended)
@@ -323,6 +329,8 @@ They help separate:
 - UI operations
 - Network operations
 - Background processing
+
+---
 
 ## Types of Dispatchers
 
@@ -402,6 +410,8 @@ runBlocking {
 
 Avoid using `runBlocking()` in Android production UI code because it blocks the main thread and can freeze the application.
 
+---
+
 # Coroutine vs Thread
 
 Coroutines and threads are both used for concurrent programming, but they work differently internally.
@@ -409,6 +419,8 @@ Coroutines and threads are both used for concurrent programming, but they work d
 A thread is managed directly by the operating system and requires its own memory stack. Creating too many threads increases memory usage and system overhead.
 
 A coroutine, on the other hand, is lightweight and managed by Kotlin. Multiple coroutines can run on a small number of threads, making them much more efficient for asynchronous programming.
+
+---
 
 ## Key Differences
 
@@ -505,6 +517,7 @@ Modern Android development heavily relies on:
 - StateFlow
 - Structured Concurrency
 
+---
 
 # Concurrency Concepts
 
@@ -557,4 +570,3 @@ In Kotlin:
 | Efficient | Expensive |
 
 ---
-
