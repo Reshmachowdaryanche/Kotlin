@@ -66,7 +66,6 @@ suspend fun greet() {
   - Another suspend function
   - A coroutine scope
 
----
 
 # Example
 
