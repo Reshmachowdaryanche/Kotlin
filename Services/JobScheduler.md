@@ -80,7 +80,7 @@ class MyJobService : JobService() {
 }
 ```
 
----
+
 
 ### Step 2: Schedule the Job
 
@@ -98,7 +98,7 @@ val scheduler = getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
 scheduler.schedule(jobInfo)
 ```
 
----
+
 
 ## 🔹 **Job Lifecycle**
 
@@ -108,7 +108,7 @@ scheduler.schedule(jobInfo)
 4. When finished → call `jobFinished(params, needsReschedule)`.
 5. If killed, `onStopJob()` is called → you can decide whether to retry.
 
----
+
 
 ## 🔹 **Pros of JobScheduler**
 
@@ -117,7 +117,7 @@ scheduler.schedule(jobInfo)
 ✅ Works well with Doze & App Standby.
 ✅ Jobs can survive reboot.
 
----
+
 
 ## 🔹 **Cons of JobScheduler**
 
@@ -126,7 +126,7 @@ scheduler.schedule(jobInfo)
 ❌ No easy task chaining (unlike WorkManager).
 ❌ Jobs are **best-effort**, not guaranteed to run at exact time.
 
----
+
 
 ## 🔹 **When to Use JobScheduler**
 
@@ -139,7 +139,7 @@ scheduler.schedule(jobInfo)
 * Uses JobScheduler under the hood (on API 23+).
 * Adds backward compatibility + guaranteed execution + retries + chaining.
 
----
+
 
 ✅ **In short:**
 JobScheduler is the **low-level system API** for background scheduling, but **WorkManager is the modern, Jetpack wrapper** that makes it easier, reliable, and backward compatible.
