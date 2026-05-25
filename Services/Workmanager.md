@@ -11,7 +11,7 @@
   * The device restarts
   * Battery saver / Doze mode kicks in
 
----
+--
 
 # 🔹 **Why WorkManager?**
 
