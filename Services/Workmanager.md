@@ -1,6 +1,6 @@
 
 
-# 🔹 **What is WorkManager?**
+## 🔹 **What is WorkManager?**
 
 * Part of **Android Jetpack (AndroidX)**.
 * A library for scheduling **deferrable, guaranteed background work**.
@@ -13,7 +13,7 @@
 
 
 
-# 🔹 **Why WorkManager?**
+## 🔹 **Why WorkManager?**
 
 * **IntentService** = simple background tasks, but dies if app is killed → ❌ not reliable.
 * **JobScheduler** = system-level jobs, but only on API 21+ → ❌ not backward compatible.
@@ -27,7 +27,7 @@
 
 
 
-# 🔹 **Core Concepts**
+## 🔹 **Core Concepts**
 
 1. **Worker** → The unit of work you define.
 
@@ -53,7 +53,7 @@
 
 
 
-# 🔹 **Code Example**
+## 🔹 **Code Example**
 
 ### 1. Define a Worker
 
@@ -99,7 +99,7 @@ WorkManager.getInstance(context).enqueue(request)
 
 
 
-# 🔹 **WorkManager Features**
+## 🔹 **WorkManager Features**
 
 ### ✅ Constraints
 
