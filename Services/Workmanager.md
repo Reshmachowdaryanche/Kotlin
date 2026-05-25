@@ -51,7 +51,7 @@
    * Queues, schedules, runs, and retries work.
    * Persists jobs in an **SQLite database** internally.
 
----
+
 
 # 🔹 **Code Example**
 
@@ -77,7 +77,7 @@ class UploadLogsWorker(appContext: Context, params: WorkerParameters)
 }
 ```
 
----
+
 
 ### 2. Enqueue Work
 
@@ -97,7 +97,7 @@ val request = OneTimeWorkRequestBuilder<UploadLogsWorker>()
 WorkManager.getInstance(context).enqueue(request)
 ```
 
----
+
 
 # 🔹 **WorkManager Features**
 
@@ -172,7 +172,7 @@ WorkManager.getInstance(context).getWorkInfoByIdLiveData(request.id)
     }
 ```
 
----
+
 
 # 🔹 **When to Use WorkManager**
 
@@ -182,7 +182,7 @@ WorkManager.getInstance(context).getWorkInfoByIdLiveData(request.id)
 * Scheduling periodic jobs (daily/weekly).
 * Background file uploads/downloads (non real-time).
 
----
+
 
 # 🔹 **When NOT to Use WorkManager**
 
@@ -190,7 +190,7 @@ WorkManager.getInstance(context).getWorkInfoByIdLiveData(request.id)
 * **Very short tasks** → Use coroutines/threads inside Activity/Service.
 * **Exact timing** → Use AlarmManager (e.g., reminder at 9:00 AM sharp).
 
----
+
 
 # 🔹 **Why WorkManager > JobScheduler**
 
@@ -200,7 +200,7 @@ WorkManager.getInstance(context).getWorkInfoByIdLiveData(request.id)
 * Guaranteed execution across reboots.
 * Google officially recommends it in modern apps.
 
----
+
 
 ✅ **In short:**
 WorkManager is the **modern, reliable, and recommended** way to run deferrable + guaranteed background tasks in Android.
