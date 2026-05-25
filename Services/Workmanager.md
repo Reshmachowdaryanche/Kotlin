@@ -209,6 +209,8 @@ Ah! You probably mean **“Expedited Work”** in **WorkManager**. Let me explai
 
 ---
 
+
+
 # 🔹 **What is Expedited Work in WorkManager?**
 
 Normally, **WorkManager schedules work as deferrable**, meaning it may **wait until constraints are met** or the system decides it’s a good time (battery-friendly, Doze mode, etc.).
