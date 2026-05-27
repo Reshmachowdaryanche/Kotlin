@@ -318,44 +318,98 @@ This is the MOST IMPORTANT topic.
 ---
 
 # 1. RENDEZVOUS Channel (Default)
+A **RENDEZVOUS channel** in Kotlin Coroutines is a channel with **zero buffer capacity**.
 
 ```kotlin
 val channel = Channel<Int>()
 ```
 
-Capacity = 0
+or
 
-No buffer.
+```kotlin
+val channel = Channel<Int>(Channel.RENDEZVOUS)
+```
 
-Sender and receiver must meet.
+Both are the same because the default channel type is `RENDEZVOUS`. ([Kotlin][1])
 
 ---
 
-# How It Works
+# Core Idea
+
+There is **no storage/buffer** inside the channel.
+
+So:
+
+* `send()` waits until someone calls `receive()`
+* `receive()` waits until someone calls `send()`
+
+The sender and receiver must **meet at the same time**.
+
+That is why it is called **Rendezvous** (meeting point). ([Kotlin][1])
+
+---
+
+# Visual Understanding
 
 ```text
-Sender ---> waits ---> Receiver
+Sender ---- waits ----> Receiver
 ```
 
-`send()` suspends until receiver consumes.
+or
+
+```text
+Receiver ---- waits ----> Sender
+```
+
+No data is stored in between.
 
 ---
 
-# Example
+# Important Behavior
+
+## Sender suspends
 
 ```kotlin
-val channel = Channel<Int>()
+channel.send(10)
+```
 
-launch {
-    println("Before send")
-    channel.send(10)
-    println("After send")
-}
+If no receiver is ready → coroutine pauses.
 
-delay(2000)
+---
 
-launch {
-    println(channel.receive())
+## Receiver suspends
+
+```kotlin
+channel.receive()
+```
+
+If no sender is ready → coroutine pauses.
+
+---
+
+# Real Example
+
+```kotlin
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+
+fun main() = runBlocking {
+
+    val channel = Channel<Int>()
+
+    launch {
+        println("Before send")
+        channel.send(100)
+        println("After send")
+    }
+
+    delay(2000)
+
+    launch {
+        println("Before receive")
+        println("Received: ${channel.receive()}")
+        println("After receive")
+    }
 }
 ```
 
@@ -365,22 +419,171 @@ launch {
 
 ```text
 Before send
-(2 second wait)
-10
+(2 seconds pause)
+Before receive
+Received: 100
+After receive
 After send
 ```
 
-Because sender waited for receiver.
+---
+
+# Why "After send" comes later?
+
+Because:
+
+```kotlin
+channel.send(100)
+```
+
+suspends until:
+
+```kotlin
+channel.receive()
+```
+
+happens.
+
+So the sender is blocked (suspended) waiting for receiver.
 
 ---
 
-# Use Cases
+# Internal Flow
 
-Use when:
+```text
+1. Sender tries to send
+2. No receiver available
+3. Sender suspends
 
-* strict synchronization needed
-* producer should wait
-* no buffering required
+Later...
+
+4. Receiver starts receive()
+5. Data transferred directly
+6. Both continue
+```
+
+---
+
+# Think of It Like This
+
+Imagine handing over a paper directly to another person.
+
+You cannot leave it on a table.
+
+Both people must be present at the same time.
+
+That is RENDEZVOUS channel.
+
+---
+
+# Capacity
+
+RENDEZVOUS channel capacity:
+
+Capacity = 0
+
+---
+
+# Why Use It?
+
+Use when you want:
+
+* strict synchronization
+* producer and consumer coordination
+* backpressure
+* guaranteed handoff
+* no buffering
+
+---
+
+# Backpressure Meaning
+
+Producer cannot produce too fast.
+
+Because sender waits for receiver.
+
+This naturally controls speed.
+
+---
+
+# Compare with Buffered Channel
+
+| Feature         | Rendezvous | Buffered       |
+| --------------- | ---------- | -------------- |
+| Buffer size     | 0          | > 0            |
+| Sender waits?   | Yes        | Only when full |
+| Data stored?    | No         | Yes            |
+| Synchronization | Strict     | Loose          |
+| Memory usage    | Minimal    | More           |
+
+---
+
+# Simple Producer-Consumer Example
+
+```kotlin
+fun main() = runBlocking {
+
+    val channel = Channel<String>()
+
+    launch {
+        val items = listOf("A", "B", "C")
+
+        for (item in items) {
+            println("Sending $item")
+            channel.send(item)
+            println("Sent $item")
+        }
+    }
+
+    launch {
+        repeat(3) {
+            delay(1000)
+            val value = channel.receive()
+            println("Received $value")
+        }
+    }
+}
+```
+
+---
+
+# Expected Flow
+
+```text
+Sending A
+(wait)
+Received A
+Sent A
+
+Sending B
+(wait)
+Received B
+Sent B
+```
+
+Each send waits for receive.
+
+---
+
+# Important Interview Point
+
+A RENDEZVOUS channel is similar to:
+
+* a `BlockingQueue` of size `0`
+* direct handoff communication
+
+But unlike `BlockingQueue`,
+Kotlin Channels use **suspension**, not thread blocking. ([Kotlin][2])
+
+---
+
+# One-Line Definition
+
+> A RENDEZVOUS channel is a zero-buffer channel where sender and receiver must meet simultaneously to exchange data. ([Kotlin][1])
+
+[1]: https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.channels/-channel/-factory/-r-e-n-d-e-z-v-o-u-s.html?utm_source=chatgpt.com "RENDEZVOUS - kotlinx.coroutines.channels"
+[2]: https://kotlinlang.org/docs/channels.html?utm_source=chatgpt.com "Channels | Kotlin Documentation"
+
 
 ---
 
