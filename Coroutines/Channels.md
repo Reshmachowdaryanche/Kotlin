@@ -190,6 +190,8 @@ Depending on capacity:
 
 # Deferred vs Channel
 
+Deferred values provide a convenient way to transfer a single value between coroutines. Channels provide a way to transfer a stream of values.
+
 ---
 
 ## Deferred
@@ -256,7 +258,7 @@ Used for:
 ---
 
 # Channel vs BlockingQueue
-
+A Channel is conceptually very similar to BlockingQueue. One key difference is that instead of a blocking put operation it has a suspending send, and instead of a blocking take operation it has a suspending receive.
 Kotlin documentation compares Channel with BlockingQueue.
 
 ---
