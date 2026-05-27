@@ -79,22 +79,52 @@ import kotlinx.coroutines.channels.Channel
 
 fun main() = runBlocking {
 
+    // Create a channel
+    // This is a RENDEZVOUS channel by default
+    // Capacity = 0
     val channel = Channel<Int>()
 
+    // Producer Coroutine
     launch {
+
+        println("Producer Started")
+
         for (i in 1..5) {
+
             println("Sending $i")
+
+            // send() is a suspend function
+            // Producer waits until receiver takes the value
             channel.send(i)
+
+            println("$i sent successfully")
         }
 
+        // Important!
+        // Close channel after sending all values
         channel.close()
+
+        println("Producer Finished")
     }
 
+    // Consumer Coroutine
     launch {
+
+        println("Consumer Started")
+
+        // Loop automatically ends when channel closes
         for (item in channel) {
+
             println("Received $item")
+
+            // Delay added just for visualization
+            delay(500)
         }
+
+        println("Consumer Finished")
     }
+
+    println("Main Coroutine Waiting...")
 }
 ```
 
@@ -103,11 +133,26 @@ fun main() = runBlocking {
 # Output
 
 ```text
+Main Coroutine Waiting...
+Producer Started
 Sending 1
+Consumer Started
 Received 1
+1 sent successfully
 Sending 2
 Received 2
-...
+2 sent successfully
+Sending 3
+Received 3
+3 sent successfully
+Sending 4
+Received 4
+4 sent successfully
+Sending 5
+Received 5
+5 sent successfully
+Producer Finished
+Consumer Finished
 ```
 
 ---
