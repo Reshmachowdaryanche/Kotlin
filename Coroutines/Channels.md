@@ -587,64 +587,330 @@ Kotlin Channels use **suspension**, not thread blocking. ([Kotlin][2])
 
 ---
 
-# 2. BUFFERED Channel
+A **Buffered Channel** in Kotlin Coroutines is a channel that has a **buffer/storage space**.
+
+It allows the sender to send values **without waiting immediately** for the receiver.
+
+---
+
+# Basic Syntax
 
 ```kotlin
-val channel = Channel<Int>(capacity = 3)
+val channel = Channel<Int>(3)
 ```
 
-Channel stores 3 items.
+This means:
 
-Sender suspends only when buffer becomes full.
+* buffer size = 3
+* up to 3 items can be stored inside the channel
+
+---
+
+# Core Idea
+
+Unlike RENDEZVOUS channel:
+
+```text
+RENDEZVOUS:
+Sender ↔ Receiver must meet immediately
+```
+
+Buffered channel:
+
+```text
+Sender → Buffer → Receiver
+```
+
+The sender can continue until the buffer becomes full.
+
+---
+
+# Visual Understanding
+
+## Buffer Size = 3
+
+```text
+[10][20][30]
+```
+
+If buffer still has space:
+
+```kotlin
+channel.send(value)
+```
+
+does NOT suspend.
+
+---
+
+# When Does Sender Suspend?
+
+Sender suspends only when:
+
+```text
+Buffer is FULL
+AND
+No receiver is consuming
+```
 
 ---
 
 # Example
 
 ```kotlin
-val channel = Channel<Int>(3)
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 
-launch {
-    for(i in 1..5){
-        println("Sending $i")
-        channel.send(i)
+fun main() = runBlocking {
+
+    val channel = Channel<Int>(2)
+
+    launch {
+        println("Sending 1")
+        channel.send(1)
+        println("Sent 1")
+
+        println("Sending 2")
+        channel.send(2)
+        println("Sent 2")
+
+        println("Sending 3")
+        channel.send(3)
+        println("Sent 3")
     }
-}
 
-launch {
-    delay(2000)
+    delay(3000)
 
-    for(item in channel){
-        println("Received $item")
+    launch {
+        repeat(3) {
+            println("Received: ${channel.receive()}")
+        }
     }
 }
 ```
 
 ---
 
-# Buffer Flow
+# What Happens Internally?
+
+Buffer capacity:
+
+Capacity = 2
+
+---
+
+## Step-by-step
+
+### Send 1
 
 ```text
-[1][2][3]
+Buffer: [1]
+```
 
-4th send waits
+No suspension.
+
+---
+
+### Send 2
+
+```text
+Buffer: [1][2]
+```
+
+Still fine.
+
+---
+
+### Send 3
+
+Now buffer is full.
+
+```text
+Buffer: [1][2]
+```
+
+So:
+
+```kotlin
+channel.send(3)
+```
+
+suspends.
+
+---
+
+### Receiver Starts
+
+Receiver consumes:
+
+```text
+Receive 1
+Buffer becomes: [2]
+```
+
+Now space is available.
+
+So sender resumes and inserts 3.
+
+```text
+Buffer: [2][3]
 ```
 
 ---
 
-# Use Cases
+# Expected Output
+
+```text
+Sending 1
+Sent 1
+
+Sending 2
+Sent 2
+
+Sending 3
+(waiting...)
+
+Received: 1
+
+Sent 3
+
+Received: 2
+Received: 3
+```
+
+---
+
+# Main Difference from RENDEZVOUS
+
+| Feature                   | Rendezvous   | Buffered      |
+| ------------------------- | ------------ | ------------- |
+| Capacity                  | 0            | > 0           |
+| Buffer exists?            | No           | Yes           |
+| Sender waits immediately? | Yes          | No            |
+| Sender suspends when      | No receiver  | Buffer full   |
+| Speed                     | Synchronized | More flexible |
+
+---
+
+# Real-Life Analogy
+
+## RENDEZVOUS
+
+Direct handover.
+
+```text
+Person A → Person B
+```
+
+Both must be present.
+
+---
+
+## Buffered Channel
+
+Mailbox system.
+
+```text
+Person A → Mailbox → Person B
+```
+
+Sender can drop messages and leave.
+
+Receiver reads later.
+
+---
+
+# Why Buffered Channels Are Useful
 
 Useful when:
 
-* producer faster than consumer
-* temporary bursts happen
-* background processing
+* producer is faster than consumer
+* temporary storage needed
+* smoother async communication
+* reduce suspension frequency
 
-Examples:
+---
 
-* socket messages
-* analytics events
-* API responses
+# Producer Faster Than Consumer Example
+
+```kotlin
+fun main() = runBlocking {
+
+    val channel = Channel<Int>(5)
+
+    launch {
+        repeat(10) {
+            println("Producing $it")
+            channel.send(it)
+        }
+    }
+
+    launch {
+        repeat(10) {
+            delay(1000)
+            println("Consuming ${channel.receive()}")
+        }
+    }
+}
+```
+
+---
+
+# What Happens?
+
+Producer quickly fills:
+
+```text
+[0][1][2][3][4]
+```
+
+Then waits when full.
+
+Consumer slowly removes items.
+
+---
+
+# Important Interview Point
+
+Buffered channels provide:
+
+* asynchronous communication
+* temporary queueing
+* controlled backpressure
+
+But:
+
+* larger buffer = more memory usage
+* too much buffering can hide slow consumers
+
+---
+
+# Special Buffered Constants
+
+Kotlin provides predefined capacities:
+
+| Type                 | Meaning                 |
+| -------------------- | ----------------------- |
+| `Channel.RENDEZVOUS` | Capacity 0              |
+| `Channel.CONFLATED`  | Keeps latest value only |
+| `Channel.UNLIMITED`  | Infinite buffer         |
+| `Channel.BUFFERED`   | Default buffered size   |
+
+---
+
+# Example of Default Buffered
+
+```kotlin
+val channel = Channel<Int>(Channel.BUFFERED)
+```
+
+Uses default internal buffer size.
+
+---
+
+# One-Line Definition
+
+> A Buffered Channel is a channel with storage capacity that allows senders to continue sending until the buffer becomes full.
 
 ---
 
