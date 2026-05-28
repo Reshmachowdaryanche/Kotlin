@@ -1722,7 +1722,7 @@ Function returns async stream
 
 # Pipelines
 
-[Coroutine Pipeline](Coroutines/coroutine_pipeline.md)
+[Coroutine Pipeline](https://github.com/Reshmachowdaryanche/Kotlin/blob/main/Coroutines/coroutine_pipeline.md)
 ---
 
 # Fan-Out
