@@ -586,7 +586,7 @@ Kotlin Channels use **suspension**, not thread blocking. ([Kotlin][2])
 
 
 ---
-## Buffered Channel
+## 2. Buffered Channel
 A **Buffered Channel** in Kotlin Coroutines is a channel that has a **buffer/storage space**.
 
 It allows the sender to send values **without waiting immediately** for the receiver.
