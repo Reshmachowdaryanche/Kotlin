@@ -1,6 +1,6 @@
 # Kotlin Channels — Complete Deep Dive Notes
 
-## What are Channels?
+# What are Channels?
 
 Channels are used for **communication between coroutines**.
 
@@ -317,7 +317,7 @@ This is the MOST IMPORTANT topic.
 
 ---
 
-# 1. RENDEZVOUS Channel (Default)
+## 1. RENDEZVOUS Channel (Default)
 A **RENDEZVOUS channel** in Kotlin Coroutines is a channel with **zero buffer capacity**.
 
 ```kotlin
@@ -334,7 +334,7 @@ Both are the same because the default channel type is `RENDEZVOUS`. ([Kotlin][1]
 
 ---
 
-# Core Idea
+### Core Idea
 
 There is **no storage/buffer** inside the channel.
 
@@ -349,7 +349,7 @@ That is why it is called **Rendezvous** (meeting point). ([Kotlin][1])
 
 ---
 
-# Visual Understanding
+### Visual Understanding
 
 ```text
 Sender ---- waits ----> Receiver
@@ -365,9 +365,9 @@ No data is stored in between.
 
 ---
 
-# Important Behavior
+### Important Behavior
 
-## Sender suspends
+#### Sender suspends
 
 ```kotlin
 channel.send(10)
@@ -377,7 +377,7 @@ If no receiver is ready → coroutine pauses.
 
 ---
 
-## Receiver suspends
+###3 Receiver suspends
 
 ```kotlin
 channel.receive()
@@ -387,7 +387,7 @@ If no sender is ready → coroutine pauses.
 
 ---
 
-# Real Example
+### Real Example
 
 ```kotlin
 import kotlinx.coroutines.*
@@ -415,7 +415,7 @@ fun main() = runBlocking {
 
 ---
 
-# Output
+### Output
 
 ```text
 Before send
@@ -428,7 +428,7 @@ After send
 
 ---
 
-# Why "After send" comes later?
+### Why "After send" comes later?
 
 Because:
 
@@ -448,7 +448,7 @@ So the sender is blocked (suspended) waiting for receiver.
 
 ---
 
-# Internal Flow
+### Internal Flow
 
 ```text
 1. Sender tries to send
@@ -464,7 +464,7 @@ Later...
 
 ---
 
-# Think of It Like This
+### Think of It Like This
 
 Imagine handing over a paper directly to another person.
 
@@ -476,7 +476,7 @@ That is RENDEZVOUS channel.
 
 ---
 
-# Capacity
+### Capacity
 
 RENDEZVOUS channel capacity:
 
@@ -484,7 +484,7 @@ Capacity = 0
 
 ---
 
-# Why Use It?
+### Why Use It?
 
 Use when you want:
 
@@ -496,7 +496,7 @@ Use when you want:
 
 ---
 
-# Backpressure Meaning
+### Backpressure Meaning
 
 Producer cannot produce too fast.
 
@@ -506,7 +506,7 @@ This naturally controls speed.
 
 ---
 
-# Compare with Buffered Channel
+### Compare with Buffered Channel
 
 | Feature         | Rendezvous | Buffered       |
 | --------------- | ---------- | -------------- |
@@ -518,7 +518,7 @@ This naturally controls speed.
 
 ---
 
-# Simple Producer-Consumer Example
+### Simple Producer-Consumer Example
 
 ```kotlin
 fun main() = runBlocking {
@@ -547,7 +547,7 @@ fun main() = runBlocking {
 
 ---
 
-# Expected Flow
+### Expected Flow
 
 ```text
 Sending A
@@ -565,7 +565,7 @@ Each send waits for receive.
 
 ---
 
-# Important Interview Point
+### Important Interview Point
 
 A RENDEZVOUS channel is similar to:
 
@@ -577,7 +577,7 @@ Kotlin Channels use **suspension**, not thread blocking. ([Kotlin][2])
 
 ---
 
-# One-Line Definition
+### One-Line Definition
 
 > A RENDEZVOUS channel is a zero-buffer channel where sender and receiver must meet simultaneously to exchange data. ([Kotlin][1])
 
@@ -586,14 +586,14 @@ Kotlin Channels use **suspension**, not thread blocking. ([Kotlin][2])
 
 
 ---
-
+## Buffered Channel
 A **Buffered Channel** in Kotlin Coroutines is a channel that has a **buffer/storage space**.
 
 It allows the sender to send values **without waiting immediately** for the receiver.
 
 ---
 
-# Basic Syntax
+### Basic Syntax
 
 ```kotlin
 val channel = Channel<Int>(3)
@@ -606,7 +606,7 @@ This means:
 
 ---
 
-# Core Idea
+### Core Idea
 
 Unlike RENDEZVOUS channel:
 
@@ -625,9 +625,9 @@ The sender can continue until the buffer becomes full.
 
 ---
 
-# Visual Understanding
+### Visual Understanding
 
-## Buffer Size = 3
+#### Buffer Size = 3
 
 ```text
 [10][20][30]
@@ -643,7 +643,7 @@ does NOT suspend.
 
 ---
 
-# When Does Sender Suspend?
+### When Does Sender Suspend?
 
 Sender suspends only when:
 
@@ -655,7 +655,7 @@ No receiver is consuming
 
 ---
 
-# Example
+### Example
 
 ```kotlin
 import kotlinx.coroutines.*
@@ -691,7 +691,7 @@ fun main() = runBlocking {
 
 ---
 
-# What Happens Internally?
+### What Happens Internally?
 
 Buffer capacity:
 
@@ -699,9 +699,9 @@ Capacity = 2
 
 ---
 
-## Step-by-step
+### Step-by-step
 
-### Send 1
+#### Send 1
 
 ```text
 Buffer: [1]
@@ -711,7 +711,7 @@ No suspension.
 
 ---
 
-### Send 2
+#### Send 2
 
 ```text
 Buffer: [1][2]
@@ -721,7 +721,7 @@ Still fine.
 
 ---
 
-### Send 3
+#### Send 3
 
 Now buffer is full.
 
@@ -739,7 +739,7 @@ suspends.
 
 ---
 
-### Receiver Starts
+#### Receiver Starts
 
 Receiver consumes:
 
@@ -758,7 +758,7 @@ Buffer: [2][3]
 
 ---
 
-# Expected Output
+### Expected Output
 
 ```text
 Sending 1
@@ -780,7 +780,7 @@ Received: 3
 
 ---
 
-# Main Difference from RENDEZVOUS
+### Main Difference from RENDEZVOUS
 
 | Feature                   | Rendezvous   | Buffered      |
 | ------------------------- | ------------ | ------------- |
@@ -792,9 +792,9 @@ Received: 3
 
 ---
 
-# Real-Life Analogy
+### Real-Life Analogy
 
-## RENDEZVOUS
+#### RENDEZVOUS
 
 Direct handover.
 
@@ -806,7 +806,7 @@ Both must be present.
 
 ---
 
-## Buffered Channel
+#### Buffered Channel
 
 Mailbox system.
 
@@ -820,7 +820,7 @@ Receiver reads later.
 
 ---
 
-# Why Buffered Channels Are Useful
+### Why Buffered Channels Are Useful
 
 Useful when:
 
@@ -831,7 +831,7 @@ Useful when:
 
 ---
 
-# Producer Faster Than Consumer Example
+### Producer Faster Than Consumer Example
 
 ```kotlin
 fun main() = runBlocking {
@@ -856,7 +856,7 @@ fun main() = runBlocking {
 
 ---
 
-# What Happens?
+### What Happens?
 
 Producer quickly fills:
 
@@ -870,7 +870,7 @@ Consumer slowly removes items.
 
 ---
 
-# Important Interview Point
+### Important Interview Point
 
 Buffered channels provide:
 
@@ -885,7 +885,7 @@ But:
 
 ---
 
-# Special Buffered Constants
+### Special Buffered Constants
 
 Kotlin provides predefined capacities:
 
@@ -898,7 +898,7 @@ Kotlin provides predefined capacities:
 
 ---
 
-# Example of Default Buffered
+### Example of Default Buffered
 
 ```kotlin
 val channel = Channel<Int>(Channel.BUFFERED)
@@ -908,7 +908,7 @@ Uses default internal buffer size.
 
 ---
 
-# One-Line Definition
+### One-Line Definition
 
 > A Buffered Channel is a channel with storage capacity that allows senders to continue sending until the buffer becomes full.
 
