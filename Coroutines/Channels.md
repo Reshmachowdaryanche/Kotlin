@@ -914,104 +914,564 @@ Uses default internal buffer size.
 
 ---
 
-# 3. UNLIMITED Channel
+## 3. UNLIMITED Channel
 
-```kotlin
+An **UNLIMITED channel** in Kotlin Coroutines is a channel with an **unlimited buffer size**.
+
+```kotlin id="my31zx"
 val channel = Channel<Int>(Channel.UNLIMITED)
 ```
 
-Infinite buffer.
+This means:
 
-Sender NEVER suspends.
+* sender almost never suspends
+* values keep getting stored in memory
+* receiver can consume later
 
 ---
 
-# Example
+### Core Idea
 
-```kotlin
-val channel = Channel<Int>(Channel.UNLIMITED)
+```text id="pd4bgq"
+Sender → Infinite Buffer → Receiver
+```
 
-launch {
-    repeat(100000) {
-        channel.send(it)
+The producer can keep sending data continuously.
+
+---
+
+### Capacity
+
+Unlimited channel capacity:
+
+Capacity = \infty
+
+(Not truly infinite internally, but practically unbounded until memory runs out.)
+
+---
+
+### Important Behavior
+
+#### send() does NOT suspend
+
+```kotlin id="og0xiz"
+channel.send(value)
+```
+
+usually continues immediately.
+
+Because buffer can always grow.
+
+---
+
+### Example
+
+```kotlin id="k2n50c"
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+
+fun main() = runBlocking {
+
+    val channel = Channel<Int>(Channel.UNLIMITED)
+
+    launch {
+        repeat(5) {
+            println("Sending $it")
+            channel.send(it)
+        }
+    }
+
+    delay(3000)
+
+    launch {
+        repeat(5) {
+            println("Received ${channel.receive()}")
+        }
     }
 }
 ```
 
 ---
 
-# Danger
+### What Happens?
 
-Memory can grow infinitely.
+Producer sends all items immediately:
 
-Possible issues:
-
-* OOM (Out Of Memory)
-* memory leaks
-
----
-
-# Use Cases
-
-Rarely needed.
-
-Use ONLY when:
-
-* data volume controlled
-* consumer guaranteed
-
----
-
-# 4. CONFLATED Channel
-
-```kotlin
-val channel = Channel<Int>(Channel.CONFLATED)
+```text id="cl2js9"
+Buffer:
+[0][1][2][3][4]
 ```
 
-Keeps ONLY latest value.
-
-Old values discarded.
+Even though receiver starts later.
 
 ---
 
-# Example
+### Expected Output
 
-```kotlin
-val channel = Channel<Int>(Channel.CONFLATED)
+```text id="aw2d5p"
+Sending 0
+Sending 1
+Sending 2
+Sending 3
+Sending 4
+
+(3 seconds later)
+
+Received 0
+Received 1
+Received 2
+Received 3
+Received 4
+```
+
+Notice:
+
+* sender never waits
+* all items stored in buffer
+
+---
+
+### Internal Working
+
+#### Producer Side
+
+```text id="h1lnrb"
+send(1) → store
+send(2) → store
+send(3) → store
+```
+
+No suspension.
+
+---
+
+#### Consumer Side
+
+Later:
+
+```text id="ntp5a6"
+receive() → gets oldest item
+```
+
+FIFO order maintained.
+
+---
+
+### Real-Life Analogy
+
+Think of:
+
+```text id="s0wd8n"
+Producer → Huge warehouse → Consumer
+```
+
+Producer keeps dumping packages.
+
+Consumer processes whenever ready.
+
+---
+
+### Danger of Unlimited Channels
+
+Very important.
+
+If producer is much faster than consumer:
+
+```text id="2r80k7"
+Messages keep accumulating
+```
+
+which can cause:
+
+* huge memory usage
+* OutOfMemoryError
+* app slowdown
+
+---
+
+### Dangerous Example
+
+```kotlin id="1xv0x8"
+val channel = Channel<Int>(Channel.UNLIMITED)
 
 launch {
-    repeat(10){
-        channel.send(it)
+    while (true) {
+        channel.send(Random.nextInt())
     }
 }
-
-launch {
-    delay(1000)
-    println(channel.receive())
-}
 ```
 
-Possible output:
+If consumer is slow or absent:
 
-```text
-9
+```text id="x3bwy9"
+Memory keeps growing forever
 ```
-
-Because older values overwritten.
 
 ---
 
-# Use Cases
+### Comparison with Other Channels
 
-Perfect for UI state updates.
+| Type        | Capacity       | Sender Suspends |
+| ----------- | -------------- | --------------- |
+| RENDEZVOUS  | 0              | Immediately     |
+| Buffered(3) | 3              | When full       |
+| UNLIMITED   | Infinite       | Almost never    |
+| CONFLATED   | 1(latest only) | Never           |
 
-Examples:
+---
 
-* GPS location
-* scroll position
+### Unlimited vs Buffered
+
+#### Buffered
+
+```kotlin id="c2xjsv"
+Channel<Int>(5)
+```
+
+Limited queue.
+
+---
+
+#### Unlimited
+
+```kotlin id="brm7n9"
+Channel<Int>(Channel.UNLIMITED)
+```
+
+No practical limit.
+
+---
+
+### When Should You Use It?
+
+Use only when:
+
+* data volume is controlled
+* consumer will definitely catch up
+* temporary bursts expected
+* message loss unacceptable
+
+---
+
+### When NOT to Use
+
+Avoid when:
+
+* producer speed is unpredictable
+* infinite streams exist
+* memory usage matters
+* consumer may become slow
+
+---
+
+### Better Alternatives Sometimes
+
+Instead of unlimited channels:
+
+* bounded buffered channels
+* Flow
+* SharedFlow
+* StateFlow
+* conflated channels
+
+depending on use case.
+
+---
+
+### Important Interview Point
+
+Unlimited channels remove backpressure.
+
+Meaning:
+
+```text id="tv22ov"
+Producer never slows down
+```
+
+This can be risky in real systems.
+
+---
+
+### One-Line Definition
+
+> An UNLIMITED channel is a channel with an unbounded buffer where send operations usually never suspend because values are continuously accumulated in memory.
+
+---
+
+## 4. CONFLATED Channel
+
+A **Conflated Channel** in Kotlin Coroutines is a channel that keeps **only the latest value**.
+
+Older values are automatically discarded if a new value arrives before the receiver consumes the previous one.
+
+---
+
+### Syntax
+
+```kotlin id="c1j8pp"
+val channel = Channel<Int>(Channel.CONFLATED)
+```
+
+---
+
+### Core Idea
+
+```text id="d9hm5o"
+Old values are replaced by latest value
+```
+
+The receiver may miss intermediate values.
+
+Only the newest/latest value matters.
+
+---
+
+### Capacity Behavior
+
+Conflated channel behaves like:
+
+Capacity = 1
+
+BUT with special replacement behavior.
+
+---
+
+### Important Rule
+
+When a new value comes:
+
+```text id="g9x0cz"
+Old buffered value → removed
+New value → stored
+```
+
+So buffer always contains only ONE latest value.
+
+---
+
+### Example
+
+```kotlin id="3qpkv5"
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+
+fun main() = runBlocking {
+
+    val channel = Channel<Int>(Channel.CONFLATED)
+
+    launch {
+        repeat(5) {
+            println("Sending $it")
+            channel.send(it)
+            delay(100)
+        }
+    }
+
+    launch {
+        delay(500)
+
+        repeat(2) {
+            println("Received ${channel.receive()}")
+        }
+    }
+}
+```
+
+---
+
+### What Happens Internally?
+
+Producer sends quickly:
+
+```text id="c8wnx7"
+Send 0 → buffer = [0]
+Send 1 → replace 0
+Send 2 → replace 1
+Send 3 → replace 2
+Send 4 → replace 3
+```
+
+Final buffer:
+
+```text id="m6lk9z"
+[4]
+```
+
+Receiver starts later and gets only latest value.
+
+---
+
+### Expected Output
+
+```text id="of6y32"
+Sending 0
+Sending 1
+Sending 2
+Sending 3
+Sending 4
+
+Received 4
+```
+
+The receiver does NOT get:
+
+```text id="57s89o"
+0,1,2,3
+```
+
+because they were replaced.
+
+---
+
+### Key Feature
+
+#### send() never suspends
+
+Because:
+
+```text id="f50n3w"
+Old value is overwritten
+```
+
+instead of waiting for space.
+
+---
+
+### Real-Life Analogy
+
+Think of a:
+
+```text id="0we0be"
+Live GPS location tracker
+```
+
+You only care about:
+
+```text id="wckm42"
+latest location
+```
+
+not every intermediate movement.
+
+---
+
+### Great Use Cases
+
+Conflated channels are useful for:
+
+* UI state updates
+* latest sensor values
 * progress updates
+* location tracking
+* stock price updates
+* live data streams
 
-Only latest state matters.
+Where:
+
+```text id="twxj17"
+latest value matters more than history
+```
+
+---
+
+### Example: Progress Updates
+
+```kotlin id="09nyne"
+launch {
+    for (i in 1..100) {
+        channel.send(i)
+    }
+}
+```
+
+Receiver may only see:
+
+```text id="rbliv7"
+40
+75
+100
+```
+
+instead of all values.
+
+This reduces unnecessary processing.
+
+---
+
+### Difference from Buffered Channel
+
+| Feature                   | Buffered | Conflated |
+| ------------------------- | -------- | --------- |
+| Stores multiple values    | Yes      | No        |
+| Keeps history             | Yes      | No        |
+| Old values preserved      | Yes      | Replaced  |
+| Latest value only         | No       | Yes       |
+| send() suspends when full | Yes      | No        |
+
+---
+
+### Difference from StateFlow
+
+Very important interview point.
+
+#### Conflated Channel
+
+* one consumer usually
+* hot stream
+* values can be lost
+* receive-based API
+
+---
+
+#### StateFlow
+
+* multiple collectors
+* always has current state
+* replay latest automatically
+* designed for UI state
+
+Today, many StateFlow use cases replaced conflated channels.
+
+---
+
+### Internal Visualization
+
+```text id="kv9c5d"
+Send 1 → [1]
+Send 2 → [2]
+Send 3 → [3]
+```
+
+Receiver gets:
+
+```text id="rpnr5h"
+3
+```
+
+Only latest survives.
+
+---
+
+### Important Warning
+
+Do NOT use conflated channels when:
+
+* every event matters
+* order/history important
+* no data loss allowed
+
+Bad examples:
+
+* banking transactions
+* chat messages
+* payment processing
+
+---
+
+### Interview One-Liner
+
+> A Conflated Channel keeps only the latest value and automatically drops older unconsumed values.
+
 
 ---
 
