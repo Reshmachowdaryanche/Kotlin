@@ -1,75 +1,74 @@
-# Queue → Blocking Queue → Producer Consumer → Coroutine Channels (Kotlin)
+Here’s your content reorganized with a clean documentation hierarchy using:
+
+* **H1** → Main Topic
+* **H2** → Major Sections
+* **H3** → Child Topics
+* **H4** → Sub-child Topics
+
+This structure makes the document easier to read, navigate, and maintain.
+
+---
+
+# Queue → Blocking Queue → Producer Consumer → Pub/Sub → Coroutine Channels
+
+---
 
 # 1. Introduction
 
-This document explains the evolution of concurrent communication patterns using Kotlin.
+Modern concurrent and distributed systems evolved through several communication patterns.
 
-We will cover:
+The evolution happened because earlier approaches introduced problems such as:
 
-```text id="4s0l08"
-Simple Queue
-→ Producer Consumer Pattern
-→ wait()/notify()
+* Race conditions
+* CPU wastage
+* Synchronization complexity
+* Tight coupling
+* Scalability issues
+* Deadlocks
+* Distributed communication challenges
+
+This document explains the evolution from:
+
+```text
+Queue
 → Blocking Queue
+→ Producer Consumer Pattern
+→ Publish Subscribe Pattern
 → Coroutine Channels
 ```
 
-including:
-
-* race conditions
-* synchronization
-* notify/wait
-* blocking
-* thread coordination
-* coroutine communication
-
-All examples are complete runnable Kotlin programs.
+with complete explanations and full code examples.
 
 ---
 
-# 2. Simple Queue
+# 2. Basic Queue
 
 A queue is a FIFO (First In First Out) data structure.
 
-```text id="vzjzod"
+```text
 Producer → Queue → Consumer
 ```
 
-Producer inserts items.
+The producer inserts data.
 
-Consumer removes items.
+The consumer removes data.
 
 ---
 
-# Simple Queue Example (Unsafe)
+## 2.1 Simple Queue Example (Python)
+```
 
-```kotlin id="2mjlwm"
 import kotlin.concurrent.thread
 
 val queue = mutableListOf<Int>()
 
-fun main() {
-
-    thread {
-        producer()
-    }
-
-    thread {
-        consumer()
-    }
-}
-
 fun producer() {
 
-    var value = 0
+    for (i in 0 until 10) {
 
-    while (true) {
+        queue.add(i)
 
-        queue.add(value)
-
-        println("[Producer] Produced: $value")
-
-        value++
+        println("[Producer] Produced: $i")
 
         Thread.sleep(1000)
     }
@@ -85,43 +84,57 @@ fun consumer() {
 
             println("[Consumer] Consumed: $item")
         }
-
-        Thread.sleep(500)
     }
+}
+
+fun main() {
+
+    val producerThread = thread(start = false) {
+        producer()
+    }
+
+    val consumerThread = thread(start = false) {
+        consumer()
+    }
+
+    producerThread.start()
+    consumerThread.start()
+
+    producerThread.join()
+    consumerThread.join()
 }
 ```
 
 ---
 
-# Problems with Simple Queue
+## 2.2 Problems with Simple Queues
 
----
+### 2.2.1 Problem 1 — Race Conditions
 
-# Problem 1 — Race Conditions
+Multiple threads access shared memory simultaneously.
 
-Multiple threads access shared queue simultaneously.
+Example:
 
-```text id="3h08vs"
+```text
 Producer modifies queue
 Consumer modifies queue
-At same time
+Both execute at same time
 ```
 
-Possible issues:
+Result:
 
-* corrupted state
-* crashes
+* corrupted queue state
 * inconsistent data
+* crashes
 
 ---
 
-# Problem 2 — Busy Waiting
+### 2.2.2 Problem 2 — Busy Waiting
 
 Consumer repeatedly checks queue.
 
-```kotlin id="91n02o"
+```JAVA
 while (true) {
-
     if (queue.isNotEmpty()) {
         consume()
     }
@@ -138,75 +151,99 @@ This is called:
 
 ---
 
-# Problem 3 — Queue Overflow
+### 2.2.3 Problem 3 — Queue Overflow
 
 Producer faster than consumer.
 
+```text
+Producer: 1000 msgs/sec
+Consumer: 10 msgs/sec
+```
+
 Queue grows infinitely.
 
-Results:
+Result:
 
-* memory issues
+* memory exhaustion
 * latency spikes
-* crashes
+* application crashes
 
 ---
 
-# Problem 4 — Empty Queue
+### 2.2.4 Problem 4 — Empty Queue
 
-Consumer keeps checking empty queue.
+Consumer wants data but queue is empty.
 
-Still wasting CPU.
+Need manual handling:
+
+* retry
+* sleep
+* polling
+
+---
+
+### 2.2.5 Problem 5 — Manual Synchronization
+
+Developers must manage:
+
+* mutexes
+* locks
+* semaphores
+* synchronization
+
+This becomes error-prone.
 
 ---
 
 # 3. Producer Consumer Pattern
 
-Producer and consumer communicate through shared buffer.
+The Producer Consumer Pattern separates:
+
+* production of data
+* consumption of data
+
+using a shared buffer.
 
 ---
 
-# Architecture
+## 3.1 Architecture
 
-```text id="4lf1yu"
+```text
 Producer → Shared Queue → Consumer
 ```
 
 ---
 
-# Example Without Proper Synchronization
+## 3.2 Goals
 
-```kotlin id="x6xgtg"
+* asynchronous processing
+* decoupling
+* smoother workloads
+* parallelism
+
+---
+
+## 3.3 Producer Consumer Example (Without Proper Blocking)
+
+```JAVA
 import kotlin.concurrent.thread
 
 val queue = mutableListOf<Int>()
-
 const val MAX_SIZE = 5
-
-fun main() {
-
-    thread {
-        producer()
-    }
-
-    thread {
-        consumer()
-    }
-}
 
 fun producer() {
 
-    var value = 0
+    var item = 0
 
     while (true) {
 
         if (queue.size < MAX_SIZE) {
 
-            queue.add(value)
+            queue.add(item)
 
-            println("[Producer] Produced: $value")
+            println("[Producer] Produced: $item")
 
-            value++
+            item++
         }
 
         Thread.sleep(1000)
@@ -227,34 +264,50 @@ fun consumer() {
         Thread.sleep(2000)
     }
 }
+
+fun main() {
+
+    val producerThread = thread(start = true) {
+        producer()
+    }
+
+    val consumerThread = thread(start = true) {
+        consumer()
+    }
+
+    producerThread.join()
+    consumerThread.join()
+}
 ```
 
 ---
 
-# Problems Still Exist
+## 3.4 Problems Still Exist
 
-Even now:
+Even with the Producer Consumer Pattern:
 
-* busy waiting exists
-* synchronization is manual
+* consumer still polls
+* producer still checks manually
+* synchronization still manual
+* CPU still wasted
 * race conditions still possible
 
-Need thread coordination.
+Need better coordination.
 
 ---
 
 # 4. wait() and notify()
 
-Instead of continuously polling:
+To avoid busy waiting:
 
-* consumer sleeps when queue empty
-* producer wakes consumer after adding item
+* consumers sleep when queue empty
+* producers wake consumers after producing data
 
 ---
 
-# Concept
+## 4.1 Concept
 
-```text id="jlwmh7"
+```text
 Queue Empty
     ↓
 Consumer waits()
@@ -268,159 +321,178 @@ Consumer wakes up
 
 ---
 
-# Full wait()/notify() Example
+## 4.2 Java wait() / notify() Example
 
-```kotlin id="wl75ea"
-import kotlin.concurrent.thread
+```java
+import java.util.LinkedList;
+import java.util.Queue;
 
-val queue = mutableListOf<Int>()
+public class ProducerConsumerWaitNotify {
 
-const val MAX_SIZE = 5
+    private static final Queue<Integer> queue = new LinkedList<>();
+    private static final int MAX_SIZE = 5;
 
-fun main() {
+    public static void main(String[] args) {
 
-    thread(name = "Producer") {
-        producer()
-    }
+        Thread producer = new Thread(() -> {
 
-    thread(name = "Consumer") {
-        consumer()
-    }
-}
+            int value = 0;
 
-fun producer() {
+            while (true) {
 
-    var value = 0
+                synchronized (queue) {
 
-    while (true) {
+                    while (queue.size() == MAX_SIZE) {
 
-        synchronized(queue) {
+                        try {
+                            System.out.println("[Producer] Queue full. Waiting...");
+                            queue.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
 
-            while (queue.size == MAX_SIZE) {
+                    queue.add(value);
 
-                println("[Producer] Queue full. Waiting...")
+                    System.out.println("[Producer] Produced: " + value);
 
-                queue.wait()
+                    value++;
+
+                    queue.notify();
+
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
+        });
 
-            queue.add(value)
+        Thread consumer = new Thread(() -> {
 
-            println("[Producer] Produced: $value")
+            while (true) {
 
-            value++
+                synchronized (queue) {
 
-            queue.notify()
+                    while (queue.isEmpty()) {
 
-            Thread.sleep(1000)
-        }
-    }
-}
+                        try {
+                            System.out.println("[Consumer] Queue empty. Waiting...");
+                            queue.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
 
-fun consumer() {
+                    int item = queue.remove();
 
-    while (true) {
+                    System.out.println("[Consumer] Consumed: " + item);
 
-        synchronized(queue) {
+                    queue.notify();
 
-            while (queue.isEmpty()) {
-
-                println("[Consumer] Queue empty. Waiting...")
-
-                queue.wait()
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
+        });
 
-            val item = queue.removeAt(0)
-
-            println("[Consumer] Consumed: $item")
-
-            queue.notify()
-
-            Thread.sleep(2000)
-        }
+        producer.start();
+        consumer.start();
     }
 }
 ```
 
 ---
 
-# Important: Why while Instead of if?
+## 4.3 Why while() Instead of if()?
 
-Correct:
+### Correct
 
-```kotlin id="9vv8m0"
-while (queue.isEmpty()) {
-    queue.wait()
+```java
+while(queue.isEmpty()) {
+    queue.wait();
 }
 ```
 
-Wrong:
+### Wrong
 
-```kotlin id="1l6q7q"
-if (queue.isEmpty()) {
-    queue.wait()
+```java
+if(queue.isEmpty()) {
+    queue.wait();
 }
 ```
+
+### Why?
 
 Because:
 
-* spurious wakeups happen
-* another thread may consume first
-* condition must be rechecked
+* spurious wakeups occur
+* multiple consumers may wake up
+* another thread may consume item first
+
+Always recheck condition.
 
 ---
 
-# Problems with wait()/notify()
+## 4.4 Problems with wait()/notify()
 
----
+### 4.4.1 Problem 1 — Missed Notifications
 
-# Problem 1 — Missed Notifications
-
-Producer may notify before consumer waits.
+Producer may call notify before consumer waits.
 
 Result:
 
-```text id="bm6n0i"
+```text
 Consumer sleeps forever
 ```
 
 ---
 
-# Problem 2 — Deadlocks
+### 4.4.2 Problem 2 — Deadlocks
 
-Improper locking freezes program.
+Improper lock handling can freeze system.
+
+```text
+Thread A waiting for Thread B
+Thread B waiting for Thread A
+```
 
 ---
 
-# Problem 3 — Complex Synchronization
+### 4.4.3 Problem 3 — Complex Synchronization
 
 Need careful handling of:
 
-* synchronized
-* locks
-* monitors
+* monitor locks
+* synchronized blocks
 * condition variables
+* shared memory
 
-Code becomes hard to maintain.
+Code becomes difficult to maintain.
 
 ---
 
 # 5. Blocking Queue
 
-BlockingQueue solves synchronization automatically.
+Blocking Queue automates synchronization.
 
 ---
 
-# Features
+## 5.1 Features
 
-If queue empty:
+### If queue empty
 
-```text id="nnj6z3"
+```text
 Consumer blocks automatically
 ```
 
-If queue full:
+### If queue full
 
-```text id="l0p4mj"
+```text
 Producer blocks automatically
 ```
 
@@ -430,376 +502,382 @@ No manual notify logic.
 
 ---
 
-# Architecture
+## 5.2 Architecture
 
-```text id="pkv4kc"
-Producer → BlockingQueue → Consumer
+```text
+Producer → Blocking Queue → Consumer
 ```
 
 ---
 
-# Full BlockingQueue Example
+## 5.3 Java BlockingQueue Example
 
-```kotlin id="5s48q0"
-import java.util.concurrent.ArrayBlockingQueue
-import kotlin.concurrent.thread
+```java
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
-val queue = ArrayBlockingQueue<Int>(5)
+public class BlockingQueueExample {
 
-fun main() {
+    private static final BlockingQueue<Integer> queue =
+            new ArrayBlockingQueue<>(5);
 
-    thread(name = "Producer") {
-        producer()
-    }
+    public static void main(String[] args) {
 
-    thread(name = "Consumer") {
-        consumer()
-    }
-}
+        Thread producer = new Thread(() -> {
 
-fun producer() {
+            int value = 0;
 
-    var value = 0
+            while (true) {
 
-    while (true) {
+                try {
 
-        queue.put(value)
+                    queue.put(value);
 
-        println("[Producer] Produced: $value")
+                    System.out.println("[Producer] Produced: " + value);
 
-        value++
+                    value++;
 
-        Thread.sleep(1000)
-    }
-}
+                    Thread.sleep(1000);
 
-fun consumer() {
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
 
-    while (true) {
+        Thread consumer = new Thread(() -> {
 
-        val item = queue.take()
+            while (true) {
 
-        println("[Consumer] Consumed: $item")
+                try {
 
-        Thread.sleep(2000)
+                    int item = queue.take();
+
+                    System.out.println("[Consumer] Consumed: " + item);
+
+                    Thread.sleep(2000);
+
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        producer.start();
+        consumer.start();
     }
 }
 ```
 
 ---
 
-# Advantages of BlockingQueue
+## 5.4 Advantages of Blocking Queue
 
 * thread-safe
+* no busy waiting
 * automatic blocking
 * automatic wakeup
-* no busy waiting
 * simpler code
 
 ---
 
-# Internal Behavior
-
-## Consumer
-
-```text id="6f5c1l"
-take()
-↓
-If queue empty → thread sleeps
-```
-
----
-
-# Producer
-
-```text id="q7j0m7"
-put()
-↓
-If queue full → thread sleeps
-```
-
----
-
-# 6. Multiple Producers and Consumers
-
-BlockingQueue scales naturally.
-
----
-
-# Example
-
-```kotlin id="h8ih74"
-import java.util.concurrent.ArrayBlockingQueue
-import kotlin.concurrent.thread
-
-val queue = ArrayBlockingQueue<Int>(10)
-
-fun main() {
-
-    repeat(2) { id ->
-        thread {
-            producer(id)
-        }
-    }
-
-    repeat(3) { id ->
-        thread {
-            consumer(id)
-        }
-    }
-}
-
-fun producer(id: Int) {
-
-    var value = 0
-
-    while (true) {
-
-        queue.put(value)
-
-        println("[Producer-$id] Produced: $value")
-
-        value++
-
-        Thread.sleep(1000)
-    }
-}
-
-fun consumer(id: Int) {
-
-    while (true) {
-
-        val item = queue.take()
-
-        println("[Consumer-$id] Consumed: $item")
-
-        Thread.sleep(2000)
-    }
-}
-```
-
----
-
-# Limitation of BlockingQueue
+## 5.5 Limitations
 
 Still tightly coupled.
 
-```text id="a10zjv"
+```text
 Producer knows queue
 Consumer knows queue
 ```
 
-Mostly useful inside single JVM/process.
+Works well inside a single machine.
+
+Not ideal for distributed systems.
 
 ---
 
-# 7. Coroutine Channels
+# 6. Publish Subscribe Pattern (Pub/Sub)
 
-Coroutine channels are modern communication primitives.
-
-Built for Kotlin coroutines.
+Pub/Sub decouples producers and consumers.
 
 ---
 
-# Philosophy
+## 6.1 Architecture
 
-```text id="m0efzx"
-Do not share mutable state.
+```text
+Publisher → Topic/Event Bus → Subscribers
+```
+
+---
+
+## 6.2 Example
+
+```text
+OrderCreated Event
+
+→ Inventory Service
+→ Email Service
+→ Analytics Service
+```
+
+One event can have multiple subscribers.
+
+---
+
+## 6.3 Problems Solved
+
+### 6.3.1 Tight Coupling
+
+Producer does NOT know consumers.
+
+It only publishes events.
+
+---
+
+### 6.3.2 Single Consumer Limitation
+
+Multiple subscribers can receive the same event.
+
+---
+
+### 6.3.3 Scalability
+
+Easy to add new consumers.
+
+---
+
+### 6.3.4 Distributed Communication
+
+Works across:
+
+* servers
+* microservices
+* cloud systems
+
+---
+
+## 6.4 Redis Pub/Sub Example (Python)
+
+### Publisher
+
+```python
+import redis.clients.jedis.Jedis
+
+fun main() {
+
+    val jedis = Jedis("localhost", 6379)
+
+    var count = 0
+
+    while (true) {
+
+        val message = "Message $count"
+
+        jedis.publish("news_channel", message)
+
+        println("[Publisher] Sent: $message")
+
+        count++
+
+        Thread.sleep(1000)
+    }
+}
+```
+
+### Subscriber
+
+```python
+import redis.clients.jedis.Jedis
+import redis.clients.jedis.JedisPubSub
+
+fun main() {
+
+    val jedis = Jedis("localhost", 6379)
+
+    println("[Subscriber] Waiting for messages...")
+
+    jedis.subscribe(object : JedisPubSub() {
+
+        override fun onMessage(channel: String, message: String) {
+
+            println("[Subscriber] Received: $message")
+        }
+
+    }, "news_channel")
+}
+---
+
+## 6.5 Limitations of Pub/Sub
+
+* eventual consistency
+* duplicate events
+* ordering problems
+* harder debugging
+* retry complexity
+
+---
+
+# 7. Channels
+
+Channels are communication primitives.
+
+Popular in:
+
+* Go
+* Kotlin Coroutines
+* Rust async systems
+
+---
+
+## 7.1 Philosophy
+
+```text
+Do not share memory.
 Communicate using messages.
 ```
 
 ---
 
-# Architecture
+## 7.2 Architecture
 
-```text id="xx9k6x"
-Coroutine Sender → Channel → Coroutine Receiver
+```text
+Sender → Channel → Receiver
 ```
 
 ---
 
-# Advantages
+## 7.3 Why Channels?
 
-* lightweight
+Shared memory with locks is difficult.
+
+Channels simplify concurrency.
+
+---
+
+## 7.4 Problems Solved
+
+* fewer race conditions
+* no manual locking
+* safer synchronization
 * structured concurrency
-* cancellation support
-* safer communication
-* no manual locks
 
 ---
 
-# Dependency
-
-```kotlin id="dd6gko"
-implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
-```
+# 8. Go Channels
 
 ---
 
-# Full Coroutine Channel Example
+## 8.1 Go Channel Example
 
-```kotlin id="4cl70k"
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
+```go
+package main
 
-fun main() = runBlocking {
+import (
+    "fmt"
+    "time"
+)
 
-    val channel = Channel<Int>()
+func producer(ch chan int) {
 
-    launch {
-        producer(channel)
-    }
+    value := 0
 
-    launch {
-        consumer(channel)
-    }
+    for {
 
-    delay(20000)
-}
+        fmt.Println("[Producer] Producing:", value)
 
-suspend fun producer(channel: Channel<Int>) {
-
-    var value = 0
-
-    while (true) {
-
-        println("[Producer] Sending: $value")
-
-        channel.send(value)
+        ch <- value
 
         value++
 
-        delay(1000)
+        time.Sleep(time.Second)
     }
 }
 
-suspend fun consumer(channel: Channel<Int>) {
+func consumer(ch chan int) {
 
-    while (true) {
+    for {
 
-        val item = channel.receive()
+        value := <- ch
 
-        println("[Consumer] Received: $item")
+        fmt.Println("[Consumer] Consumed:", value)
 
-        delay(2000)
+        time.Sleep(2 * time.Second)
     }
 }
-```
 
----
+func main() {
 
-# Important Behavior
+    ch := make(chan int)
 
----
+    go producer(ch)
 
-# send()
+    go consumer(ch)
 
-```text id="0j6h14"
-If channel full
-↓
-Coroutine suspends
-```
-
-NOT thread blocking.
-
----
-
-# receive()
-
-```text id="jlwmx3"
-If channel empty
-↓
-Coroutine suspends
-```
-
-Again:
-
-NOT thread blocking.
-
----
-
-# Difference Between Thread Blocking and Coroutine Suspension
-
----
-
-# Thread Blocking
-
-```text id="uxq4os"
-OS thread becomes inactive
-```
-
-Heavyweight.
-
-Consumes resources.
-
-Example:
-
-```kotlin id="m9jls0"
-Thread.sleep(1000)
-```
-
----
-
-# Coroutine Suspension
-
-```text id="h5c58m"
-Coroutine pauses
-Thread reused by others
-```
-
-Very lightweight.
-
-Example:
-
-```kotlin id="w3q55x"
-delay(1000)
-```
-
----
-
-# Buffered Channels
-
-Buffered channels behave similar to BlockingQueue.
-
----
-
-# Example
-
-```kotlin id="wz0sw6"
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
-
-fun main() = runBlocking {
-
-    val channel = Channel<Int>(5)
-
-    launch {
-
-        for (i in 0..20) {
-
-            println("[Producer] Sending: $i")
-
-            channel.send(i)
-        }
-
-        channel.close()
-    }
-
-    launch {
-
-        for (item in channel) {
-
-            println("[Consumer] Received: $item")
-
-            delay(2000)
-        }
-    }
+    time.Sleep(20 * time.Second)
 }
 ```
 
 ---
 
-# Unbuffered vs Buffered Channels
+## 8.2 Important Property
+
+Unbuffered channels synchronize sender and receiver.
+
+### Sender Behavior
+
+Sender blocks until receiver receives.
+
+### Receiver Behavior
+
+Receiver blocks until sender sends.
+
+---
+
+## 8.3 Buffered Channel Example
+
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+)
+
+func producer(ch chan int) {
+
+    for i := 0; i < 10; i++ {
+
+        fmt.Println("[Producer] Sending:", i)
+
+        ch <- i
+    }
+
+    close(ch)
+}
+
+func consumer(ch chan int) {
+
+    for value := range ch {
+
+        fmt.Println("[Consumer] Received:", value)
+
+        time.Sleep(2 * time.Second)
+    }
+}
+
+func main() {
+
+    ch := make(chan int, 5)
+
+    go producer(ch)
+
+    consumer(ch)
+}
+```
+
+---
+
+## 8.4 Buffered vs Unbuffered Channels
 
 | Type       | Behavior                           |
 | ---------- | ---------------------------------- |
@@ -808,9 +886,69 @@ fun main() = runBlocking {
 
 ---
 
-# 8. Evolution Summary
+# 9. Coroutine Channels (Kotlin)
 
-```text id="7g5m81"
+Channels integrate deeply with coroutines.
+
+---
+
+## 9.1 Kotlin Coroutine Channel Example
+
+```kotlin
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+
+fun main() = runBlocking {
+
+    val channel = Channel<Int>()
+
+    launch {
+
+        var value = 0
+
+        while (true) {
+
+            println("[Producer] Sending $value")
+
+            channel.send(value)
+
+            value++
+
+            delay(1000)
+        }
+    }
+
+    launch {
+
+        while (true) {
+
+            val item = channel.receive()
+
+            println("[Consumer] Received $item")
+
+            delay(2000)
+        }
+    }
+
+    delay(20000)
+}
+```
+
+---
+
+## 9.2 Advantages of Coroutine Channels
+
+* structured concurrency
+* cancellation support
+* lightweight coroutines
+* simpler async communication
+* safer concurrency
+
+---
+
+# 10. Evolution Summary
+
+```text
 Simple Queue
     ↓
 Problems:
@@ -826,54 +964,82 @@ Problems:
 - deadlocks
 - complexity
 
-BlockingQueue
+Blocking Queue
     ↓
 Solved:
 - synchronization
-- automatic blocking
+- blocking
 
 Problems:
 - tight coupling
 
-Coroutine Channels
+Publish Subscribe
     ↓
 Solved:
-- shared mutable state
+- distributed scalability
+- decoupling
+
+Problems:
+- eventual consistency
+- debugging complexity
+
+Channels / Coroutine Channels
+    ↓
+Solved:
+- shared memory complexity
 - structured concurrency
-- lightweight communication
+- safer communication
 ```
 
 ---
 
-# 9. Comparison Table
+# 11. Comparison Table
 
-| Feature            | Queue  | wait/notify | BlockingQueue | Channels  |
-| ------------------ | ------ | ----------- | ------------- | --------- |
-| Thread Safe        | No     | Manual      | Yes           | Yes       |
-| Busy Waiting       | Yes    | No          | No            | No        |
-| Blocking           | Manual | Manual      | Automatic     | Automatic |
-| Shared Memory      | Yes    | Yes         | Yes           | Minimal   |
-| Locks Required     | Yes    | Yes         | Hidden        | No        |
-| Lightweight        | No     | No          | Moderate      | Yes       |
-| Coroutine Friendly | No     | No          | Limited       | Excellent |
+| Feature            | Queue     | Blocking Queue | Pub/Sub      | Channels        |
+| ------------------ | --------- | -------------- | ------------ | --------------- |
+| Thread Safe        | No        | Yes            | Usually      | Yes             |
+| Busy Waiting       | Yes       | No             | No           | No              |
+| Blocking Support   | Manual    | Automatic      | Event-driven | Automatic       |
+| Tight Coupling     | Yes       | Yes            | No           | Low             |
+| Distributed        | No        | No             | Yes          | Sometimes       |
+| Multiple Consumers | Difficult | Limited        | Excellent    | Good            |
+| Shared Memory      | Yes       | Yes            | Event-based  | Message passing |
+| Manual Locks       | Required  | Hidden         | Hidden       | Minimal         |
 
 ---
 
-# 10. Key Takeaways
+# 12. Key Takeaways
 
-Simple queues are unsafe in concurrent systems.
+## 12.1 Queue
 
-wait()/notify() introduced sleeping and waking.
+Queues solved simple buffering.
 
-BlockingQueue simplified synchronization.
+---
 
-Coroutine channels modernized concurrency using lightweight suspension instead of blocking threads.
+## 12.2 wait()/notify()
 
-Modern Kotlin applications prefer:
+wait()/notify() solved sleeping and waking threads.
 
-* coroutines
-* channels
-* flows
-* structured concurrency
+---
 
-over manual thread synchronization.
+## 12.3 Blocking Queue
+
+Blocking queues simplified synchronization.
+
+---
+
+## 12.4 Pub/Sub
+
+Pub/Sub enabled distributed event-driven systems.
+
+---
+
+## 12.5 Channels
+
+Channels simplified safe concurrent communication.
+
+---
+
+## 12.6 Final Conclusion
+
+Modern systems often combine all these patterns depending on requirements.
