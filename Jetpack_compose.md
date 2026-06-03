@@ -153,9 +153,15 @@
 
 > **Recomposition is the process where Jetpack Compose re-executes composable functions when their input state changes in order to update the UI.**
 >
-> In Compose, UI is described as a function of state. Whenever the state changes, Compose automatically calls the affected composable functions again with the updated data. This process is called recomposition.
+> In traditional imperative UI systems, when data changes, developers manually update the affected widgets using setters like `setText()`, `setVisibility()`, or `notifyDataSetChanged()`.
 >
-> Example:
+> However, in Jetpack Compose, UI is declarative and state-driven. Instead of manually modifying widgets, we call composable functions again with the updated state. Compose then intelligently updates only the necessary parts of the UI.
+>
+> This process of re-executing composable functions with new state is called recomposition. 
+>
+> ---
+>
+> # Example of Recomposition
 >
 > ```kotlin
 > @Composable
@@ -166,27 +172,34 @@
 > }
 > ```
 >
-> Every time the button is clicked, the `clicks` value changes. Compose recomposes the `Text()` composable with the new value and updates only the required UI instead of redrawing the entire screen.
+> In this example:
+>
+> * `clicks` is the state.
+> * Whenever the button is clicked, the value of `clicks` changes.
+> * Compose calls the composable again with the updated value.
+> * The `Text()` composable gets recomposed and displays the latest count.
+>
+> So the flow becomes:
+>
+> ```text
+> State Change
+>      ↓
+> Recomposition
+>      ↓
+> UI Updated
+> ```
+>
+> Compose automatically updates the UI without developers manually changing views. 
 >
 > ---
 >
-> ## Intelligent Recomposition
+> # Intelligent Recomposition
 >
-> One of the biggest advantages of Compose is that recomposition is intelligent.
+> One of the biggest advantages of Compose is that recomposition is intelligent and optimized.
 >
-> Compose does not recompose the entire UI tree every time state changes. Instead, it recomposes only the composables whose inputs have changed and skips the rest.
+> Rebuilding the entire UI tree every time state changes would be computationally expensive and would consume more CPU and battery.
 >
-> This improves:
->
-> * Performance
-> * CPU usage
-> * Battery efficiency
->
-> ---
->
-> ## Recomposition Skips Unchanged UI
->
-> Compose tries to skip as much work as possible.
+> Compose solves this problem by recomposing only the composables whose inputs have changed and skipping the rest. 
 >
 > Example:
 >
@@ -194,91 +207,285 @@
 > Text(header)
 > ```
 >
-> If only the list data changes and `header` remains the same, Compose skips recomposing `Text(header)`.
+> If only the list changes and `header` remains the same:
 >
-> This selective recomposition is one of the core performance optimizations in Compose.
+> * Compose skips recomposing `Text(header)`
+> * Only the list-related composables are recomposed
+>
+> This selective recomposition is one of the core reasons why Compose performs efficiently.
 >
 > ---
 >
-> ## Recomposition is Optimistic
+> # Recomposition Skips Unchanged UI
 >
-> Recomposition in Compose is optimistic, meaning Compose assumes recomposition will complete successfully.
+> Compose tries to skip as much work as possible during recomposition.
 >
-> However, if state changes again while recomposition is happening, Compose may:
+> Every composable function or lambda can independently recompose.
+>
+> Example:
+>
+> ```kotlin
+> @Composable
+> fun NamePicker(
+>     header: String,
+>     names: List<String>
+> )
+> ```
+>
+> If:
+>
+> * `header` changes → only header-related composables recompose
+> * `names` changes → only list-related composables recompose
+>
+> Compose avoids recomposing unaffected UI sections. 
+>
+> This is very important for performance because large UI trees can still update efficiently.
+>
+> ---
+>
+> # Recomposition is Optimistic
+>
+> Recomposition in Compose is optimistic.
+>
+> This means Compose assumes recomposition will complete successfully.
+>
+> However, while recomposition is happening, state may change again.
+>
+> In such cases, Compose may:
 >
 > * Cancel the current recomposition
-> * Discard partial UI updates
+> * Discard partially built UI
 > * Restart recomposition with the latest state
 >
-> Because of this behavior, composable functions should be idempotent and side-effect free.
+> Example:
+>
+> ```text
+> Recomposition Started
+>        ↓
+> State Changed Again
+>        ↓
+> Current Recomposition Cancelled
+>        ↓
+> New Recomposition Started
+> ```
+>
+> Because recompositions can be canceled midway, composables should never depend on side-effects. 
 >
 > ---
 >
-> ## Why Composables Should Be Side-Effect Free
+> # Why Composables Should Be Side-Effect Free
 >
-> Composable functions may:
+> A side-effect is any operation that changes state outside the composable.
+>
+> Dangerous side-effects include:
+>
+> * Updating global variables
+> * Writing to SharedPreferences
+> * Updating ViewModel state directly
+> * Database writes
+> * Network calls
+>
+> Compose may:
 >
 > * Recompose frequently
-> * Be skipped
-> * Execute in different orders
-> * Be canceled midway
-> * Potentially run in parallel in the future
+> * Skip recompositions
+> * Cancel recompositions
+> * Execute composables in different orders
 >
-> Therefore, composables should not directly perform operations like:
+> Because of this, side-effects inside composables can create inconsistent or unpredictable behavior. 
 >
-> * Network calls
-> * Database writes
-> * Updating shared preferences
-> * Modifying global variables
+> ---
 >
-> Bad Example:
+> # Bad Example of Side-Effects
 >
 > ```kotlin
 > var count = 0
 >
 > @Composable
-> fun Test() {
+> fun Counter() {
 >     count++
 > }
 > ```
 >
-> Since recomposition may happen multiple times, this can produce unpredictable behavior.
->
-> ---
->
-> ## Recomposition Can Happen Frequently
->
-> During animations, recomposition may happen every frame.
->
-> Because of this, composable functions should be lightweight and fast. Expensive operations should be moved outside composables, usually into:
->
-> * ViewModel
-> * Repository
-> * Background coroutine
->
-> ---
->
-> ## Recomposition and State
->
-> Compose tracks state reads automatically.
->
-> When observed state changes:
+> Since recomposition may happen multiple times:
 >
 > ```text
-> State Change
->      ↓
-> Invalidation
->      ↓
-> Recomposition
->      ↓
-> UI Update
+> Counter()
+> Counter()
+> Counter()
 > ```
 >
-> Compose automatically updates only the affected composables.
+> `count` may increase unexpectedly.
+>
+> This creates unstable UI behavior.
 >
 > ---
 >
-> ## Interview One-Liner
+> # Good Compose Practice
 >
-> > Recomposition is the process where Compose re-executes composable functions when observed state changes and intelligently updates only the affected parts of the UI.
+> Instead of performing side-effects inside composables:
+>
+> * Move business logic to ViewModel
+> * Perform expensive work in coroutines
+> * Pass state into composables
+> * Use callbacks like `onClick`
+>
+> Example:
+>
+> ```kotlin
+> @Composable
+> fun SharedPrefsToggle(
+>     text: String,
+>     value: Boolean,
+>     onValueChanged: (Boolean) -> Unit
+> )
+> ```
+>
+> Here:
+>
+> * Composable only displays UI
+> * ViewModel handles SharedPreferences update
+> * UI remains side-effect free
+>
+> This is the recommended Compose architecture. 
+>
+> ---
+>
+> # Composable Functions Can Run Frequently
+>
+> Composable functions may execute very frequently.
+>
+> During animations, recomposition can happen every frame.
+>
+> Example:
+>
+> ```text
+> 60 FPS Animation
+>        ↓
+> Composable may execute 60 times per second
+> ```
+>
+> Because of this:
+>
+> * Composables should be lightweight
+> * Expensive operations should be avoided
+> * Heavy work should happen outside composition
+>
+> Bad:
+>
+> ```kotlin
+> @Composable
+> fun Screen() {
+>     val prefs = sharedPreferences.getString(...)
+> }
+> ```
+>
+> This may repeatedly read storage during recompositions and cause UI lag or jank. 
+>
+> ---
+>
+> # Recomposition and State Observation
+>
+> Compose automatically tracks state reads.
+>
+> Example:
+>
+> ```kotlin
+> Text("$count")
+> ```
+>
+> Compose internally remembers:
+>
+> ```text
+> This composable depends on count
+> ```
+>
+> When `count` changes:
+>
+> ```text
+> count updated
+>       ↓
+> Only affected composables recomposed
+> ```
+>
+> This is how Compose achieves efficient UI updates.
+>
+> ---
+>
+> # Composable Functions Can Execute in Parallel
+>
+> Compose is currently mostly single-threaded, but it is designed with future multithreading support in mind.
+>
+> In the future, Compose may execute composables in parallel on multiple threads for better performance. 
+>
+> This means:
+>
+> * Composables should not modify shared mutable variables
+> * They should remain thread-safe
+> * They should only transform state into UI
+>
+> ---
+>
+> # Bad Parallel Execution Example
+>
+> ```kotlin
+> @Composable
+> fun ListWithBug(myList: List<String>) {
+>     var items = 0
+>
+>     Column {
+>         for (item in myList) {
+>             items++
+>         }
+>     }
+>
+>     Text("Count: $items")
+> }
+> ```
+>
+> This is dangerous because recomposition may happen multiple times or potentially on different threads in the future.
+>
+> The UI may display incorrect counts. 
+>
+> ---
+>
+> # Composable Functions Can Execute in Any Order
+>
+> Compose does not guarantee execution order between composable functions.
+>
+> Example:
+>
+> ```kotlin
+> StartScreen()
+> MiddleScreen()
+> EndScreen()
+> ```
+>
+> Compose may execute them in any order depending on optimization priorities. 
+>
+> Therefore:
+>
+> * One composable should never depend on another composable's side-effects
+> * Every composable should be self-contained
+>
+> ---
+>
+> # Key Characteristics of Recomposition
+>
+> Recomposition is:
+>
+> * Automatic
+> * State-driven
+> * Optimized
+> * Selective
+> * Cancelable
+> * Frequent
+> * Potentially parallel in the future
+>
+> ---
+>
+> # Interview One-Liner
+>
+> > Recomposition is the process where Jetpack Compose re-executes composable functions whenever observed state changes and intelligently updates only the affected parts of the UI instead of redrawing the entire screen.
+
 
