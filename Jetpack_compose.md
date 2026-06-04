@@ -635,7 +635,7 @@
 >
 > Here:
 >
-> * `mutableState` is a `MutableState<T>` object.
+> * `mutableState` is a `MutableState<T>` object.("A mutable state that can hold a value of any type T."
 > * To read the value, use:
 >
 > ```kotlin
