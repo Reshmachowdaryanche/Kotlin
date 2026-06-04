@@ -639,7 +639,8 @@
 > * To read the value, use:
 >
 > ```kotlin
-> mutableState.value
+> class MutableState<T>(
+>    var value: T)
 > ```
 >
 > * To update the value:
