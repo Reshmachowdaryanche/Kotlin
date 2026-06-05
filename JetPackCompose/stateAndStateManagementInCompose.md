@@ -561,6 +561,14 @@ Here:
 
 A composable that internally owns and manages state.
 
+It usually uses:
+
+- remember
+- mutableStateOf
+- rememberSaveable
+
+to store and update state inside the composable itself.
+
 Example:
 
 ```kotlin
@@ -570,10 +578,22 @@ fun Counter() {
     var count by remember {
         mutableStateOf(0)
     }
+
+    Button(onClick = {
+      count++
+ }) {
+      Text("Count: $count") }
 }
 ```
 
 The composable owns the state.
+
+** What happens here? **
+- count state is created inside the composable.
+- The composable owns the state.
+- Button click updates the internal state.
+- State change triggers recomposition.
+- UI updates automatically.
 
 ---
 
