@@ -5,7 +5,7 @@
 Used to:
 
 ```text id="jlwmu1"
-Publish Compose state to external/non-Compose objects
+ synchronize Compose state with external objects.
 ```
 
 Examples:
