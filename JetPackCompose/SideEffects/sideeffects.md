@@ -191,4 +191,269 @@ val activeCount by remember {
 
 ---
 
-👉 Would you like me to now build a **full mini example (like a Chat screen)** showing *multiple side effects working together* so you see how they interact in a real scenario?
+Here's a complete beginner-friendly Navigation Compose example with:
+
+* Home Screen
+* Profile Screen
+* Passing arguments
+* Back navigation
+* Sealed routes (best practice)
+
+---
+
+## 1. Add Dependency
+
+In `build.gradle.kts` (Module: app)
+
+```kotlin
+dependencies {
+    implementation("androidx.navigation:navigation-compose:2.8.0")
+}
+```
+
+---
+
+## 2. Create Routes
+
+```kotlin
+sealed class Screen(val route: String) {
+
+    object Home : Screen("home")
+
+    object Profile : Screen("profile/{name}") {
+
+        fun createRoute(name: String): String {
+            return "profile/$name"
+        }
+    }
+}
+```
+
+---
+
+## 3. MainActivity
+
+```kotlin
+package com.example.navigationdemo
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+
+class MainActivity : ComponentActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        setContent {
+            NavigationApp()
+        }
+    }
+}
+```
+
+---
+
+## 4. Navigation Setup
+
+```kotlin
+package com.example.navigationdemo
+
+import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+
+@Composable
+fun NavigationApp() {
+
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = Screen.Home.route
+    ) {
+
+        composable(Screen.Home.route) {
+
+            HomeScreen(
+                onNavigateToProfile = { name ->
+                    navController.navigate(
+                        Screen.Profile.createRoute(name)
+                    )
+                }
+            )
+        }
+
+        composable(
+            route = Screen.Profile.route,
+            arguments = listOf(
+                navArgument("name") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+
+            val name =
+                backStackEntry.arguments?.getString("name")
+                    ?: "Unknown"
+
+            ProfileScreen(
+                name = name,
+                onBackClick = {
+                    navController.popBackStack()
+                }
+            )
+        }
+    }
+}
+```
+
+---
+
+## 5. Home Screen
+
+```kotlin
+package com.example.navigationdemo
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+
+@Composable
+fun HomeScreen(
+    onNavigateToProfile: (String) -> Unit
+) {
+
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+
+        Text("Home Screen")
+
+        Button(
+            onClick = {
+                onNavigateToProfile("Prasad")
+            }
+        ) {
+            Text("Go To Profile")
+        }
+    }
+}
+```
+
+---
+
+## 6. Profile Screen
+
+```kotlin
+package com.example.navigationdemo
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+
+@Composable
+fun ProfileScreen(
+    name: String,
+    onBackClick: () -> Unit
+) {
+
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+
+        Text("Welcome $name")
+
+        Button(
+            onClick = onBackClick
+        ) {
+            Text("Back")
+        }
+    }
+}
+```
+
+---
+
+## Flow
+
+When app starts:
+
+```text
+Home Screen
+```
+
+Click button:
+
+```text
+Go To Profile
+```
+
+Navigation happens:
+
+```kotlin
+navController.navigate("profile/Prasad")
+```
+
+Profile receives:
+
+```kotlin
+val name = "Prasad"
+```
+
+Displays:
+
+```text
+Welcome Prasad
+```
+
+Click Back:
+
+```kotlin
+navController.popBackStack()
+```
+
+Returns to:
+
+```text
+Home Screen
+```
+
+---
+
+### Next Practice
+
+After this works, try extending it:
+
+```text
+Home
+ ├── User List
+ ├── Profile
+ └── Settings
+```
+
+Then add:
+
+* Bottom Navigation
+* Nested Navigation Graphs
+* Shared ViewModel between screens
+* Passing IDs and loading data from ViewModel
+
+Those are common Android interview topics and real-world Compose navigation patterns.
