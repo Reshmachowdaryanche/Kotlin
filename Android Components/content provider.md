@@ -728,3 +728,257 @@ SQLite
 
 Room alone is enough there.
 
+---
+
+This line is VERY important in `ContentProvider`.
+
+```kotlin
+return ContentUris.withAppendedId(
+    StudentContract.CONTENT_URI,
+    id
+)
+```
+
+---
+
+# 🔥 What is happening here?
+
+Suppose:
+
+```kotlin
+StudentContract.CONTENT_URI
+```
+
+is:
+
+```text
+content://com.example.roomprovider/students
+```
+
+And after insertion:
+
+```kotlin
+val id = 5
+```
+
+Then:
+
+```kotlin
+ContentUris.withAppendedId(...)
+```
+
+creates:
+
+```text
+content://com.example.roomprovider/students/5
+```
+
+---
+
+# 🔥 Why do we return this URI?
+
+Because after inserting a row, Android convention says:
+
+👉 Return the URI of the newly created item.
+
+So the caller knows:
+
+* Which row got inserted
+* What its ID is
+
+---
+
+# 🔥 Real Example
+
+---
+
+## Before Insert
+
+URI:
+
+```text
+content://com.example.roomprovider/students
+```
+
+means:
+
+👉 Entire students collection/table
+
+---
+
+## Insert
+
+```kotlin
+val values = ContentValues().apply {
+    put("name", "Reshma")
+    put("age", 25)
+}
+
+val insertedUri = contentResolver.insert(
+    StudentContract.CONTENT_URI,
+    values
+)
+```
+
+Suppose DB inserted row:
+
+| id | name   | age |
+| -- | ------ | --- |
+| 5  | Reshma | 25  |
+
+---
+
+## Returned URI
+
+```text
+content://com.example.roomprovider/students/5
+```
+
+Now caller knows:
+
+* inserted row id = 5
+
+---
+
+# 🔥 What does `withAppendedId()` do internally?
+
+It appends ID at end of URI.
+
+Equivalent to:
+
+```kotlin
+Uri.parse(
+    "content://com.example.roomprovider/students/$id"
+)
+```
+
+But safer and cleaner.
+
+---
+
+# 🔥 Why is this useful?
+
+Now caller can directly access inserted row.
+
+Example:
+
+```kotlin
+content://com.example.roomprovider/students/5
+```
+
+can be queried specifically.
+
+---
+
+# 🔥 Usually Used with UriMatcher
+
+Providers often support:
+
+```text
+content://authority/students       -> all students
+content://authority/students/5     -> specific student
+```
+
+---
+
+# 🔥 Interview Important
+
+## Q: Why does insert() return URI instead of Boolean?
+
+Because:
+
+* Caller may need inserted row ID
+* URI uniquely identifies inserted resource
+* Follows REST-like design
+
+---
+
+# 🔥 Think Like REST API
+
+This is similar to:
+
+```http
+POST /students
+```
+
+returns:
+
+```http
+/students/5
+```
+
+same concept.
+
+---
+
+# 🔥 Full Flow Visualization
+
+```text
+Insert Request
+↓
+content://com.example.roomprovider/students
+
+DB inserts row
+↓
+id = 5
+
+Provider returns
+↓
+content://com.example.roomprovider/students/5
+```
+
+---
+
+# 🔥 Another Important Thing
+
+`ContentUris.withAppendedId()` expects:
+
+* Base URI
+* Numeric row ID
+
+```kotlin
+ContentUris.withAppendedId(baseUri, rowId)
+```
+
+Returns new URI.
+
+---
+
+# 🔥 Practical Benefit
+
+Later:
+
+```kotlin
+contentResolver.query(
+    insertedUri,
+    null,
+    null,
+    null,
+    null
+)
+```
+
+can fetch only inserted student.
+
+---
+
+# 🔥 Summary
+
+```kotlin
+return ContentUris.withAppendedId(
+    StudentContract.CONTENT_URI,
+    id
+)
+```
+
+means:
+
+👉 "Insertion successful. Here is URI of newly created row."
+
+Example:
+
+```text
+content://com.example.roomprovider/students/5
+```
+
+
