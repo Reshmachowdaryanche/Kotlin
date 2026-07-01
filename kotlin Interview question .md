@@ -722,6 +722,166 @@ fun main() {
 
 `lateinit` is used when we want to initialize a non-null variable later instead of at the time of declaration, such as in dependency injection or Android lifecycle methods. We can check whether a `lateinit` variable is initialized using `this::variableName.isInitialized`, which returns true or false.
 
+## 17.What is the difference between `lateinit` and `lazy` in Kotlin?
+
+Both `lateinit` and `lazy` are used for **late initialization**, but they work in different ways and are used in different scenarios.
+
+
+
+**🔹 `lateinit`**
+
+- Used with **`var` properties only**
+- Value must be assigned **before use**
+- Cannot be used with **primitive types (Int, Double, etc.)**
+- Does not provide thread safety by default
+- You can reassign the value
+
+
+
+**Example:**
+
+```kotlin
+class Person {
+    lateinit var name: String
+
+    fun initName() {
+        name = "MindOrks"
+    }
+}
+```
+
+
+
+ **🔹 `lazy`**
+
+- Used only with **`val` properties**
+- Value is initialized **only once when first accessed**
+- Thread-safe by default (can be configured)
+- Read-only (immutable after initialization)
+
+
+
+**Example:**
+
+```kotlin
+val name: String by lazy {
+    "MindOrks"
+}
+```
+
+
+
+**🔥 Key Differences**
+
+| Feature | `lateinit` | `lazy` |
+|--------|------------|--------|
+| Variable type | `var` | `val` |
+| Mutability | Mutable | Immutable |
+| Initialization time | Before first use (manually) | First access (automatic) |
+| Thread safety | No | Yes (by default) |
+| Primitive types allowed | No | Yes (via object wrappers) |
+| Re-initialization | Allowed | Not allowed |
+
+
+
+### 📌 When to use?
+
+**Use `lateinit` when:**
+- You want to initialize later manually
+- Example: Dependency Injection, Android lifecycle (Activity/Fragment)
+
+
+
+**Use `lazy` when:**
+- Value is expensive to create
+- Value should be created only when needed
+- You want immutable (`val`) property
+
+
+
+ **🧠 Interview Answer (Short)**
+
+`lateinit` is used for `var` properties that are initialized later manually, while `lazy` is used for `val` properties that are initialized automatically when accessed for the first time. `lateinit` requires explicit initialization before use, whereas `lazy` initializes the value only once and is immutable.
+
+## 18. Is there any difference between `==` operator and `===` operator?
+
+Yes. The `==` operator is used to compare the values stored in variables and the `===` operator is used to check if the reference of the variables are equal or not. But in the case of primitive types, the `===` operator also checks for the value and not reference.
+
+```kotlin
+// primitive example
+val int1 = 10
+val int2 = 10
+
+println(int1 == int2)   // true
+println(int1 === int2)  // true
+
+// wrapper example
+val num1 = Integer(10)
+val num2 = Integer(10)
+
+println(num1 == num2)    // true
+println(num1 === num2)   // false
+```
+
+
+
+## 19. What is `forEach` in Kotlin?
+
+In Kotlin, to use the functionality of a for-each loop just like in Java, we use the `forEach` function.
+
+It is a higher-order function used to iterate over collections.
+
+### Example:
+```kotlin
+var listOfMindOrks = listOf(
+    "mindorks.com",
+    "blog.mindorks.com",
+    "afteracademy.com"
+)
+
+listOfMindOrks.forEach {
+    Log.d(TAG, it)
+}
+```
+
+## 20. What are Companion Objects in Kotlin?
+
+A **companion object** in Kotlin is used when you want to define members of a class that can be accessed without creating an instance of that class.
+
+Since Kotlin does not have the `static` keyword like Java, companion objects are used as a replacement for static members.
+
+### Key Points:
+- Declared using the `companion object` keyword inside a class.
+- Members inside it behave like **static members in Java**.
+- Can be accessed using the **class name directly**.
+- Only one companion object is allowed per class.
+
+### Example:
+```kotlin
+class ToBeCalled {
+    companion object {
+        fun callMe() {
+            println("You are calling me :)")
+        }
+    }
+}
+
+fun main() {
+    ToBeCalled.callMe()
+}
+````
+
+**Interview Summary:**
+
+A companion object allows us to define functions and properties inside a class that behave like static members and can be accessed using the class name without creating an object.
+
+
+
+
+
+
+
+
 
 
 
