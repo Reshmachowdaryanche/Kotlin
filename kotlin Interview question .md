@@ -1487,6 +1487,245 @@ lambda.invoke()
 
 
 
+## 44.What are Reified types in Kotlin?
+
+In Kotlin, **reified types** are used with **inline functions** to allow access to the type parameter at runtime.
+
+Normally, due to **type erasure in JVM**, generic type information is not available at runtime. But with `reified`, Kotlin preserves the type inside an inline function.
+
+
+### 🔹 Why do we need `reified`?
+
+In normal generics, this is NOT allowed:
+
+```kotlin
+fun <T> checkType(value: T) {
+    println(T::class.java) // ❌ Error: Cannot access T at runtime
+}
+````
+
+Because JVM removes generic type information at runtime (**type erasure**).
+
+
+
+### 🔹 Solution: `inline + reified`
+
+Kotlin solves this using:
+
+* `inline` → function is copied at call site
+* `reified` → keeps type information available
+
+
+
+### 🔹 Example:
+
+```kotlin
+inline fun <reified T> genericsExample(value: T) {
+    println(value)
+    println("Type of T: ${T::class.java}")
+}
+```
+
+
+
+### 🔹 Usage:
+
+```kotlin id="reified1"
+fun main() {
+    genericsExample<String>("Learning Generics!")
+    genericsExample<Int>(100)
+}
+```
+
+
+
+### 🔥 Internal Working
+
+#### Call:
+
+```kotlin id="reified2"
+genericsExample<String>("Hello")
+```
+
+#### Becomes internally like:
+
+```kotlin id="reified3"
+println("Hello")
+println("Type of T: class java.lang.String")
+```
+
+👉 Because the function is **inlined**, the compiler replaces `T` with actual type.
+
+
+
+### 🔹 Key Points:
+
+* Works only with `inline` functions
+* Allows access to generic type at runtime
+* Solves JVM **type erasure problem**
+* Cannot be used in normal (non-inline) functions
+* Commonly used in Android for:
+
+  * `Intent` helpers
+  * `ViewModel` creation
+  * JSON parsing (Gson / Moshi)
+
+
+
+### 🧠 Interview Summary
+
+Reified types in Kotlin allow us to access generic type information at runtime. Normally, generics are erased on the JVM, but by using `inline` functions with `reified`, Kotlin preserves the type, allowing us to use `T::class.java` inside the function.
+
+
+## 46. Use-cases of `let`, `run`, `with`, `also`, `apply` in Kotlin
+
+Kotlin provides **scope functions** to execute a block of code in the context of an object. They help in writing **clean, concise, and readable code**.
+
+
+
+### 🔹 1. let
+
+### Use-case:
+- Used for **null checks**
+- Used when you want to operate on a nullable object safely
+- `it` is used to refer to the object
+
+### Example:
+```kotlin
+val name: String? = "MindOrks"
+
+name?.let {
+    println(it.length)
+}
+````
+
+#### Key Point:
+
+* Best for **safe calls + transformations**
+
+
+
+### 🔹 2. run
+
+#### Use-case:
+
+* Used when you want to **initialize and compute a result**
+* Uses `this` as context object
+* Returns last expression
+
+#### Example:
+
+```kotlin
+val result = "Kotlin".run {
+    println(this)
+    length
+}
+
+println(result) // 6
+```
+
+#### Key Point:
+
+* Best for **object configuration + computation**
+
+
+
+### 🔹 3. with
+
+##### Use-case:
+
+* Used to operate on an object without extension style
+* Takes object as parameter
+* Uses `this` inside block
+
+#### Example:
+
+```kotlin
+val name = "Kotlin"
+
+val result = with(name) {
+    println(this)
+    length
+}
+
+println(result) // 6
+```
+
+#### Key Point:
+
+* Best for **multiple operations on same object**
+
+
+
+### 🔹 4. also
+
+#### Use-case:
+
+* Used for **additional side operations**
+* Returns original object
+* Uses `it`
+
+#### Example:
+
+```kotlin
+val name = "Kotlin"
+
+val result = name.also {
+    println("Length is ${it.length}")
+}
+
+println(result) // Kotlin
+```
+
+#### Key Point:
+
+* Best for **logging or debugging without modifying object**
+
+---
+
+### Example:
+
+```kotlin
+val user = StringBuilder().apply {
+    append("Hello")
+    append(" Kotlin")
+}
+
+println(user.toString()) // Hello Kotlin
+```
+
+### Key Point:
+
+* Best for **initializing objects**
+
+
+
+### 🔥 Quick Comparison Table
+
+| Function | Context Object | Return Value  | Use-case                     |
+| -------- | -------------- | ------------- | ---------------------------- |
+| let      | it             | Lambda result | Null safety, transformations |
+| run      | this           | Lambda result | Computations, object config  |
+| with     | this           | Lambda result | Group operations             |
+| also     | it             | Object itself | Side effects, logging        |
+| apply    | this           | Object itself | Object initialization        |
+
+
+
+### 🧠 Interview Summary
+
+* `let` → safe calls & transformations
+* `run` → compute result with object context
+* `with` → multiple operations on object
+* `also` → side effects without changing object
+* `apply` → object configuration
+
+All scope functions help reduce boilerplate and improve readability in Kotlin code.
+
+
+
+
+
 
 
 
