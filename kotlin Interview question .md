@@ -1139,6 +1139,364 @@ println(result) // 19
 * Widely used in Kotlin collections (e.g., `map`, `filter`, `forEach`).
 
 
+## 39. What are Higher-Order functions in Kotlin?
+
+A higher-order function is a function that:
+- Takes another function as a parameter, OR
+- Returns a function as a result
+
+This is a key concept in functional programming and is widely used in Kotlin (e.g., `map`, `filter`, `forEach`).
+
+
+### 1. Function as a Parameter
+
+A function can accept another function as an argument.
+
+#### Example:
+
+```kotlin
+fun passMeFunction(abc: () -> Unit) {
+    println("Before function execution")
+
+    abc() // calling the passed function
+
+    println("After function execution")
+}
+````
+
+#### Usage:
+
+```kotlin
+fun sayHello() {
+    println("Hello from function")
+}
+
+fun main() {
+    passMeFunction(::sayHello)
+}
+```
+
+#### Output:
+
+```
+Before function execution
+Hello from function
+After function execution
+```
+
+
+
+### 2. Function Returning Another Function
+
+A function can return another function.
+
+#### Example:
+
+```kotlin
+fun add(a: Int, b: Int): Int {
+    return a + b
+}
+
+fun returnMeAddFunction(): (Int, Int) -> Int {
+    return ::add
+}
+```
+
+
+
+#### Usage:
+
+```kotlin
+fun main() {
+    val addFunction = returnMeAddFunction()
+
+    val result = addFunction(2, 2)
+
+    println(result) // 4
+}
+```
+
+
+
+### 🔥 Key Points:
+
+* Higher-order functions improve code reusability
+* Commonly used in Kotlin collection functions (`map`, `filter`, `reduce`)
+* Helps write cleaner and more functional-style code
+
+
+## 40. What are extension functions in Kotlin?
+
+Extension functions allow you to **add new functionality to existing classes** without modifying their source code or inheriting from them.
+
+They are very useful in Kotlin to make code more readable and reusable.
+
+
+
+### Example: Extension functions for View (Android)
+
+We can add custom functions like `show()` and `hide()` to the `View` class.
+
+```kotlin
+fun View.show() {
+    this.visibility = View.VISIBLE
+}
+
+fun View.hide() {
+    this.visibility = View.GONE
+}
+````
+
+
+
+### Usage:
+
+```kotlin id="q2h0u6"
+toolbar.hide()
+button.show()
+```
+
+
+
+### How it works
+
+Even though `show()` and `hide()` are not originally part of the `View` class, Kotlin lets us call them as if they are.
+
+Internally, it behaves like a static function where the object is passed as a parameter.
+
+
+
+### Key Points:
+
+* Used to extend existing classes without inheritance
+* Improves code readability and reusability
+* Commonly used in Android development
+* `this` refers to the object being extended
+* Cannot modify the actual class, only extend its behavior
+
+
+
+## 41. What is an infix function in Kotlin?
+
+An **infix function** allows you to call a function **without using brackets or dot notation**, making the code more readable and natural.
+
+To use it, you must declare the function using the `infix` keyword.
+
+
+
+### Example:
+
+```kotlin
+class Operations {
+    var x = 10
+
+    infix fun minus(num: Int) {
+        this.x = this.x - num
+    }
+}
+```
+
+
+
+
+### Usage:
+
+```kotlin id="9n7p5m"
+fun main() {
+    val opr = Operations()
+
+    opr minus 8   // infix call (no dot, no brackets)
+
+    println(opr.x) // 2
+}
+```
+
+
+
+### How it works
+
+The infix call:
+
+```kotlin
+opr minus 8
+```
+
+is internally equivalent to:
+
+```kotlin
+opr.minus(8)
+```
+
+
+
+### Key Points:
+
+* Declared using the `infix` keyword
+* Must be member function or extension function
+* Must have exactly one parameter
+* Makes code more readable (DSL-style code)
+* Commonly used in Kotlin libraries
+
+## 42. What is an Inline Function in Kotlin?
+
+An **inline function** is a function where the Kotlin compiler replaces the **function call with the actual function body** during compilation.
+
+This is mainly used to:
+- Reduce function call overhead
+- Improve performance (especially with lambdas)
+- Avoid creating extra objects for lambda expressions
+
+
+
+#### Example:
+
+```kotlin
+inline fun test(block: () -> Unit) {
+    println("Before execution")
+    block()
+    println("After execution")
+}
+````
+
+
+
+#### Usage:
+
+```kotlin id="inline1"
+fun main() {
+    test {
+        println("Inside lambda")
+    }
+}
+```
+
+
+
+#### 🔥 What happens internally?
+
+The function call:
+
+```kotlin
+test { println("Inside lambda") }
+```
+
+is transformed by the compiler into:
+
+```kotlin
+println("Before execution")
+println("Inside lambda")
+println("After execution")
+```
+
+
+
+#### Key Points:
+
+* Function body is copied at call site
+* No function call overhead
+* Lambda is directly executed
+* Improves performance in high-order functions
+* Commonly used in Kotlin standard library
+
+
+
+## 43. What is `noinline` in Kotlin?
+
+When a function is marked as `inline`, **all lambda parameters are inlined by default**.
+
+However, if you don’t want a specific lambda to be inlined, you use the `noinline` keyword.
+
+
+
+#### Example:
+
+```kotlin id="noinline1"
+inline fun test(
+    block1: () -> Unit,
+    noinline block2: () -> Unit
+) {
+    block1()
+    block2()
+}
+```
+
+
+
+#### Usage:
+
+```kotlin id="noinline2"
+fun main() {
+    test(
+        { println("Inline lambda") },
+        { println("Non-inline lambda") }
+    )
+}
+```
+
+
+
+### 🔥 What happens internally?
+
+#### 1. Inline lambda (`block1`)
+
+The lambda body is directly inserted:
+
+```kotlin
+println("Inline lambda")
+```
+
+
+
+#### 2. `noinline` lambda (`block2`)
+
+Kotlin treats it as a normal object:
+
+```kotlin
+val lambda = object : Function0<Unit> {
+    override fun invoke() {
+        println("Non-inline lambda")
+    }
+}
+```
+
+And it is called like:
+
+```kotlin
+lambda.invoke()
+```
+
+
+
+### 🔥 Difference Between inline and noinline
+
+| Feature                | inline     | noinline        |
+| ---------------------- | ---------- | --------------- |
+| Code replacement       | Yes        | No              |
+| Lambda object creation | No         | Yes             |
+| Execution style        | Direct     | `.invoke()`     |
+| Performance            | Faster     | Slight overhead |
+| Flexibility            | Restricted | More flexible   |
+
+
+
+### 🧠 Interview Summary
+
+* `inline` replaces function calls with actual code to improve performance
+* `noinline` prevents specific lambdas from being inlined
+* Internally, `noinline` lambdas are converted into function objects and called using `invoke()`
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
