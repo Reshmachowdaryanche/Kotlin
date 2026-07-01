@@ -875,6 +875,282 @@ fun main() {
 
 A companion object allows us to define functions and properties inside a class that behave like static members and can be accessed using the class name without creating an object.
 
+## 21. What is the equivalent of Java static methods in Kotlin?
+
+Kotlin does not have the `static` keyword like Java. However, we can achieve the same functionality using different approaches:
+
+**1. Companion Object**
+Used when we want static-like methods inside a class.
+
+**2. Package-Level Function**
+Functions defined directly in a Kotlin file (outside any class) act like static methods.
+
+**3. Object Declaration**
+Used when we want a singleton with static-like behavior.
+
+---
+
+ **Example:**
+```kotlin
+// 1. Companion Object
+class MyClass {
+    companion object {
+        fun show() {
+            println("Hello from companion object")
+        }
+    }
+}
+
+// 2. Package-level function
+fun showPackage() {
+    println("Hello from package-level function")
+}
+
+// 3. Object declaration
+object MyObject {
+    fun show() {
+        println("Hello from object")
+    }
+}
+```
+**Interview Summary:**
+
+In Kotlin, Java static methods are replaced using companion objects, package-level functions, or object declarations, depending on the use case.
+
+
+
+## 22. Difference between `map` and `flatMap` in Kotlin
+
+#### 🔹 map
+
+`map` is used to **transform each element** in a collection.
+
+- It applies a function to each element.
+- Returns a list of the **same size** as the original list.
+- Used for **1-to-1 transformation**.
+
+#### Example:
+```kotlin
+val numbers = listOf(1, 2, 3)
+
+val result = numbers.map { it * 2 }
+
+println(result) // [2, 4, 6]
+````
+
+
+
+#### 🔹 flatMap
+
+`flatMap` is used to **transform each element into a collection** and then **flatten** the result into a single list.
+
+* Each element can produce multiple values.
+* Returns a **single merged (flattened) list**.
+* Used for **1-to-many transformation**.
+
+#### Example:
+
+```kotlin
+val numbers = listOf(1, 2, 3)
+
+val result = numbers.flatMap { listOf(it, it * 10) }
+
+println(result) // [1, 10, 2, 20, 3, 30]
+```
+
+
+
+### 🔥 Key Difference
+
+| Feature   | map                | flatMap             |
+| --------- | ------------------ | ------------------- |
+| Operation | Transform elements | Transform + flatten |
+| Output    | Same size list     | Flattened list      |
+| Type      | 1-to-1             | 1-to-many           |
+| Structure | Preserved          | Flattened           |
+
+
+
+### 🧠 Interview Summary
+
+* `map` is used when each item is transformed into a single value.
+* `flatMap` is used when each item is transformed into a list and all lists are combined into one.
+
+
+
+## 23. What is the difference between List and Array types in Kotlin?
+
+If you have a list of data that is having a fixed size, then you can use an Array. But if the size of the list can vary, then we have to use a mutable list.
+
+## 24 Can we use the `new` keyword to instantiate a class object in Kotlin?
+
+No, in Kotlin we don't have to use the `new` keyword to instantiate a class object.
+
+To instantiate a class object, we simply use:
+
+```kotlin
+var varName = ClassName()
+```
+
+
+## 25. What are visibility modifiers in Kotlin?
+
+A visibility modifier or access specifier or access modifier is a concept that is used to define the scope of something in a programming language. In Kotlin, we have four visibility modifiers:
+
+- **private**: visible inside that particular class or file containing the declaration.
+- **protected**: visible inside that particular class or file and also in the subclass of that particular class where it is declared.
+- **internal**: visible everywhere in that particular module.
+- **public**: visible to everyone.
+
+**Note:** By default, the visibility modifier in Kotlin is `public`.
+
+## 26. How to create a Singleton class in Kotlin?
+
+A Singleton class is a class that allows only **one instance** to be created throughout the application. It is commonly used for logging, database connections, and shared resources.
+
+In Kotlin, Singleton is created using the `object` keyword.
+
+```kotlin
+object AnySingletonClassName
+````
+
+#### Key Points:
+
+* Only one instance is created automatically.
+* You cannot use a constructor in an `object`.
+* You can use `init` block for initialization logic.
+
+
+
+## 27. What are init blocks in Kotlin?
+
+`init` blocks are initializer blocks that are executed **immediately after the primary constructor**.
+
+* A class can have multiple `init` blocks.
+* They execute in the order they are written.
+* Used when you need to run logic during object creation.
+
+#### Example:
+
+```kotlin
+class User(name: String) {
+
+    init {
+        println("User created: $name")
+    }
+}
+```
+
+
+
+## 28. What are the types of constructors in Kotlin?
+
+Kotlin has two types of constructors:
+
+#### 1. Primary Constructor
+
+* Defined in the class header.
+* Cannot contain complex logic.
+* Used for initializing properties.
+
+#### 2. Secondary Constructor
+
+* Defined inside the class using the `constructor` keyword.
+* Must call the primary constructor explicitly.
+* Can contain additional logic.
+* A class can have multiple secondary constructors.
+
+
+
+## 29. Is there any relationship between primary and secondary constructors?
+
+Yes.
+
+If a class has a secondary constructor, it must **call the primary constructor explicitly** either directly or indirectly using `this()`.
+
+
+
+### 30. What is the default type of argument used in a constructor?
+
+By default, constructor parameters in Kotlin are **immutable (`val`)**.
+
+However, you can explicitly make them mutable using `var`.
+
+### Example:
+
+```kotlin
+class User(val name: String, var age: Int)
+```
+
+## 37. What is the `open` keyword in Kotlin used for?
+
+By default, classes and functions in Kotlin are **final**, meaning they cannot be inherited or overridden.
+
+To allow inheritance or method overriding, we use the `open` keyword.
+
+#### Example:
+
+```kotlin
+open class ParentClass {
+    open fun show() {
+        println("Parent class function")
+    }
+}
+
+class ChildClass : ParentClass() {
+    override fun show() {
+        println("Child class function")
+    }
+}
+````
+
+#### Key Points:
+
+* Classes are `final` by default in Kotlin.
+* You must use `open` to allow inheritance.
+* Functions must also be marked `open` to allow overriding.
+* `override` keyword is used in the child class.
+
+
+## 38. What are lambda expressions?
+
+Lambda expressions are **anonymous functions** that can be treated as values.
+
+This means we can:
+- Pass them as arguments to functions
+- Return them from functions
+- Store them in variables like normal objects
+
+### Example:
+
+```kotlin
+val add: (Int, Int) -> Int = { a, b -> a + b }
+
+val result = add(9, 10)
+
+println(result) // 19
+````
+
+### Key Points:
+
+* Lambda functions have no name.
+* They are commonly used in functional programming.
+* They make code more concise and readable.
+* Widely used in Kotlin collections (e.g., `map`, `filter`, `forEach`).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
