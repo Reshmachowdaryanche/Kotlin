@@ -319,5 +319,127 @@ user.name; // ✅ Direct field access
 
 `@JvmStatic`, `@JvmOverloads`, and `@JvmField` are Kotlin JVM interoperability annotations used to make Kotlin code more Java-friendly. `@JvmStatic` exposes Kotlin functions as static methods in Java. `@JvmOverloads` generates overloaded methods or constructors for functions with default parameters so Java can call them easily. `@JvmField` exposes Kotlin properties as direct fields, allowing Java to access them without getters and setters. These annotations help bridge differences between Kotlin and Java and improve interoperability.
 
+## 11.What is a Data Class in Kotlin?**
+
+A **data class** in Kotlin is a special class that is mainly used to **hold/store data**. It is declared using the `data` keyword.
+
+
+
+**Syntax**
+
+```kotlin
+data class Developer(val name: String, val age: Int)
+```
+
+
+
+**Why do we use Data Classes?**
+
+In Java, if we create a class to store data, we need to manually write a lot of boilerplate code such as:
+
+- `getters` and `setters`
+- `equals()`
+- `hashCode()`
+- `toString()`
+
+
+
+**Java Example (Boilerplate Code)**
+
+```java
+public class Developer {
+
+    private String name;
+    private int age;
+
+    public Developer(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public int getAge() { return age; }
+    public void setAge(int age) { this.age = age; }
+
+    @Override
+    public boolean equals(Object o) { /* logic */ }
+
+    @Override
+    public int hashCode() { /* logic */ }
+
+    @Override
+    public String toString() {
+        return "Developer{name='" + name + "', age=" + age + "}";
+    }
+}
+```
+
+
+
+**Kotlin Data Class (Simple Version)**
+
+```kotlin
+data class Developer(val name: String, val age: Int)
+```
+
+
+
+**What Kotlin automatically generates**
+
+When we use a data class, the compiler automatically generates:
+
+- `equals()`
+- `hashCode()`
+- `toString()`
+- `copy()`
+- `componentN()` functions (for destructuring)
+
+
+
+**Example**
+
+```kotlin
+data class Developer(val name: String, val age: Int)
+
+fun main() {
+    val dev1 = Developer("John", 25)
+    val dev2 = Developer("John", 25)
+
+    println(dev1) // Developer(name=John, age=25)
+
+    println(dev1 == dev2) // true (equals() auto-generated)
+
+    val dev3 = dev1.copy(age = 30)
+    println(dev3) // Developer(name=John, age=30)
+}
+```
+
+
+
+**Requirements of a Data Class**
+
+A class must satisfy these conditions:
+
+- Primary constructor must have **at least one parameter**
+- All primary constructor parameters must be `val` or `var`
+- Cannot be **abstract**, **open**, **sealed**, or **inner**
+
+
+
+**Key Points**
+
+- Used for **data storage classes**
+- Reduces boilerplate code significantly
+- Provides built-in implementations for common methods
+- Improves readability and maintainability
+
+
+
+**Interview Answer (Short)**
+
+A data class in Kotlin is a class used to store data and is declared using the `data` keyword. The compiler automatically generates methods like `equals()`, `hashCode()`, `toString()`, and `copy()`, which reduces boilerplate code compared to Java. It is mainly used for models or DTOs.
+
 
 
