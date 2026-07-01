@@ -441,5 +441,79 @@ A class must satisfy these conditions:
 
 A data class in Kotlin is a class used to store data and is declared using the `data` keyword. The compiler automatically generates methods like `equals()`, `hashCode()`, `toString()`, and `copy()`, which reduces boilerplate code compared to Java. It is mainly used for models or DTOs.
 
+## 12. Can we use primitive types such as int, double, float in Kotlin?**
+
+In Kotlin, we do not use primitive types like `int`, `double`, or `float` directly. Instead, we use wrapper types like `Int`, `Double`, and `Float`.
+
+
+
+**Example:**
+
+```kotlin
+val age: Int = 25
+val price: Double = 99.5
+val weight: Float = 60.5f
+```
+
+
+
+**Important Point:**
+
+Kotlin converts these wrapper types into **primitive types internally** at the bytecode level for better performance.
+
+
+
+**Interview Answer (Short):**
+
+In Kotlin, we use wrapper types like `Int`, `Double`, and `Float` instead of primitive types. But internally, Kotlin converts them into primitive types in bytecode for efficiency.
+
+## 13.What is String Interpolation in Kotlin?**
+
+**String Interpolation** is a feature in Kotlin that allows you to insert variables or expressions directly inside a string.
+
+- Use **`$`** to insert a variable.
+- Use **`${}`** to insert an expression or perform an operation.
+
+
+
+**Example (Variable)**
+
+```kotlin
+var name = "MindOrks"
+
+println("Hello! I am learning from $name")
+```
+
+**Output:**
+
+```text
+Hello! I am learning from MindOrks
+```
+
+
+
+**Example (Expression)**
+
+```kotlin
+var a = 10
+var b = 20
+
+println("Sum = ${a + b}")
+```
+
+**Output:**
+
+```text
+Sum = 30
+```
+
+
+
+**Interview Answer (Short):**
+
+String Interpolation in Kotlin is used to insert variables or expressions directly into a string. We use `$` to access a variable and `${}` to evaluate an expression inside a string.
+
+
+
 
 
