@@ -513,6 +513,220 @@ Sum = 30
 
 String Interpolation in Kotlin is used to insert variables or expressions directly into a string. We use `$` to access a variable and `${}` to evaluate an expression inside a string.
 
+## 14. What do you mean by destructuring in Kotlin?**
+
+**Destructuring** in Kotlin is a way to **extract multiple values from an object into separate variables** in a single statement.
+
+It is commonly used with **data classes**, arrays, and other objects that support component functions.
+
+
+
+**Example (Data Class)**
+
+```kotlin
+data class Developer(val name: String, val age: Int)
+
+val developer = Developer("John", 25)
+
+val (name, age) = developer
+```
+
+
+
+**Using the values separately**
+
+```kotlin
+println(name)
+println(age)
+```
+
+
+
+**How it works internally:**
+
+Kotlin uses functions like:
+- `component1()` → name
+- `component2()` → age
+
+
+
+**Example with Array**
+
+```kotlin
+val numbers = arrayOf(1, 2)
+
+val (first, second) = numbers
+```
+
+
+
+**Key Points:**
+
+- Used to **unpack values from objects**
+- Works mainly with **data classes**
+- Makes code **clean and readable**
+- Internally uses `componentN()` functions
+
+
+
+**Interview Answer (Short):**
+
+Destructuring in Kotlin is a feature that allows us to extract multiple values from an object into separate variables in a single line. It is commonly used with data classes and internally works using `componentN()` functions.
+
+**What are `componentN()` functions in Kotlin?**
+
+In Kotlin, `componentN()` functions are **automatically generated functions** used for **destructuring declarations**.
+
+
+
+**How it works**
+
+When you create a **data class**, Kotlin automatically generates functions like:
+
+* `component1()`
+* `component2()`
+* `component3()`, and so on (based on properties)
+
+Each function corresponds to a property in the primary constructor.
+
+
+
+**Example**
+
+```kotlin
+data class Developer(val name: String, val age: Int)
+```
+
+Kotlin internally generates:
+
+```kotlin
+fun component1(): String = name
+fun component2(): Int = age
+```
+
+
+
+ **Destructuring usage**
+
+```kotlin
+val developer = Developer("John", 25)
+
+val (name, age) = developer
+```
+
+This is internally converted to:
+
+```kotlin
+val name = developer.component1()
+val age = developer.component2()
+```
+
+
+
+**Key Points**
+
+* Generated automatically for **data classes**
+* Used for **destructuring declarations**
+* Each property in constructor maps to `componentN()`
+* Makes code cleaner and more readable
+
+
+
+ **Interview Answer (Short)**
+
+`componentN()` functions are automatically generated functions in Kotlin data classes that are used for destructuring. Each property in the primary constructor is mapped to a `componentN()` function, like `component1()`, `component2()`, etc., which are used internally when we write destructuring declarations.
+
+
+
+## 15. When to use the `lateinit` keyword in Kotlin?**
+
+`lateinit` is used for **late initialization of non-null variables**.
+
+Normally, non-null properties in Kotlin must be initialized at the time of object creation. But sometimes this is not possible.
+
+
+
+**When to use `lateinit`:**
+
+- When a property cannot be initialized in the constructor
+- When using **Dependency Injection**
+- In **Android (Activity / Fragment lifecycle)**
+- In **unit tests (setup methods)**
+
+
+
+**Example:**
+
+```kotlin
+class Person {
+    lateinit var name: String
+
+    fun initialize() {
+        name = "MindOrks"
+    }
+}
+```
+
+
+
+**Key Points:**
+
+- Must be used with **var (mutable variable)**
+- Cannot be used with **primitive types (Int, Double, etc.)**
+- Cannot be null
+- Avoids unnecessary null checks (`?`)
+
+
+
+
+
+## 16. How to check if a `lateinit` variable has been initialized or not?**
+
+We can check if a `lateinit` variable is initialized using:
+
+👉 `this::variableName.isInitialized`
+
+
+
+**Example:**
+
+```kotlin
+class Person {
+    lateinit var name: String
+
+    fun checkInitialization() {
+        println(this::name.isInitialized) // false
+
+        name = "MindOrks"
+
+        println(this::name.isInitialized) // true
+    }
+}
+
+fun main() {
+    Person().checkInitialization()
+}
+```
+
+
+
+**Key Points:**
+
+- `isInitialized` checks initialization status
+- Prevents `UninitializedPropertyAccessException`
+- Works only with `lateinit` properties
+
+
+
+**Interview Answer (Short):**
+
+`lateinit` is used when we want to initialize a non-null variable later instead of at the time of declaration, such as in dependency injection or Android lifecycle methods. We can check whether a `lateinit` variable is initialized using `this::variableName.isInitialized`, which returns true or false.
+
+
+
+
+
+
 
 
 
