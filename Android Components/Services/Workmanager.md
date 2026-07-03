@@ -830,9 +830,223 @@ WorkManager.getInstance(this)
 2. Test retry logic by throwing an exception.
 3. Chain a `CoroutineWorker` with a normal `Worker` → see how both run together.
 
+---
 
 
+In **Android WorkManager**, a **backoff policy** determines **how long WorkManager waits before retrying a failed task** when your worker returns `Result.retry()`.
 
+## When does WorkManager retry?
+
+A worker can return one of three results:
+
+```kotlin
+Result.success()  // Work completed
+Result.failure()  // Permanent failure, don't retry
+Result.retry()    // Try again later
+```
+
+Only `Result.retry()` triggers the backoff policy. ([Android Developers][1])
+
+---
+
+## Backoff Policies
+
+WorkManager provides two retry strategies.
+
+### 1. LINEAR
+
+The retry delay increases by a fixed amount every time.
+
+Example:
+
+```kotlin
+.setBackoffCriteria(
+    BackoffPolicy.LINEAR,
+    30,
+    TimeUnit.SECONDS
+)
+```
+
+Retry timeline:
+
+| Attempt   |   Delay |
+| --------- | ------: |
+| 1st retry |  30 sec |
+| 2nd retry |  60 sec |
+| 3rd retry |  90 sec |
+| 4th retry | 120 sec |
+
+Formula:
+
+```
+delay = initialDelay × retryCount
+```
+
+This is useful when failures are expected to clear up quickly, such as:
+
+* Temporary database locks
+* Waiting for another local process
+* Short-lived resource contention
+
+---
+
+### 2. EXPONENTIAL
+
+The delay roughly doubles after each retry.
+
+```kotlin
+.setBackoffCriteria(
+    BackoffPolicy.EXPONENTIAL,
+    30,
+    TimeUnit.SECONDS
+)
+```
+
+Approximate retry timeline:
+
+| Attempt   |   Delay |
+| --------- | ------: |
+| 1st retry |  30 sec |
+| 2nd retry |  60 sec |
+| 3rd retry | 120 sec |
+| 4th retry | 240 sec |
+| 5th retry | 480 sec |
+
+Formula (conceptually):
+
+```
+delay = initialDelay × 2^(retryCount-1)
+```
+
+This is ideal for:
+
+* Server errors (500)
+* Network outages
+* Rate limiting (429)
+* Backend maintenance
+
+It avoids repeatedly hitting an unavailable service. ([Android Developers][2])
+
+---
+
+## Example
+
+```kotlin
+class UploadWorker(
+    context: Context,
+    params: WorkerParameters
+) : CoroutineWorker(context, params) {
+
+    override suspend fun doWork(): Result {
+        return try {
+            uploadFile()
+            Result.success()
+        } catch (e: IOException) {
+            Result.retry()
+        }
+    }
+}
+```
+
+Create the request:
+
+```kotlin
+val request = OneTimeWorkRequestBuilder<UploadWorker>()
+    .setBackoffCriteria(
+        BackoffPolicy.EXPONENTIAL,
+        30,
+        TimeUnit.SECONDS
+    )
+    .build()
+```
+
+If `uploadFile()` throws an `IOException`, WorkManager retries according to the configured backoff policy.
+
+---
+
+## Default behavior
+
+If you don't configure anything:
+
+* **Policy:** `EXPONENTIAL`
+* **Initial delay:** **30 seconds** ([Android Developers][1])
+
+---
+
+## Minimum backoff delay
+
+The minimum backoff delay is:
+
+```kotlin
+WorkRequest.MIN_BACKOFF_MILLIS
+```
+
+which is **10 seconds**.
+
+Even if you specify:
+
+```kotlin
+.setBackoffCriteria(
+    BackoffPolicy.LINEAR,
+    5,
+    TimeUnit.SECONDS
+)
+```
+
+WorkManager will use **10 seconds**, because delays shorter than that are not allowed. ([Android Developers][1])
+
+---
+
+## Retry count
+
+You can access the current attempt number:
+
+```kotlin
+override suspend fun doWork(): Result {
+
+    Log.d("Worker", "Attempt = $runAttemptCount")
+
+    return Result.retry()
+}
+```
+
+Typical output:
+
+```
+Attempt = 0
+Attempt = 1
+Attempt = 2
+Attempt = 3
+...
+```
+
+This is useful if you want to stop retrying after a certain number of attempts:
+
+```kotlin
+if (runAttemptCount >= 5) {
+    return Result.failure()
+}
+```
+
+---
+
+## Things to remember
+
+* `Result.success()` → work finishes.
+* `Result.failure()` → no more retries.
+* `Result.retry()` → WorkManager schedules another attempt using the configured backoff policy.
+* Retry timing is **inexact**: Android may delay execution further because of battery optimization, Doze mode, scheduling, or unmet constraints, but it won't retry earlier than the configured minimum delay. ([Android Developers][1])
+
+### Which policy should you choose?
+
+| Situation                            | Recommended policy |
+| ------------------------------------ | ------------------ |
+| Network/API failures                 | `EXPONENTIAL`      |
+| Server overload (HTTP 429/500)       | `EXPONENTIAL`      |
+| Temporary local resource contention  | `LINEAR`           |
+| Waiting for a short-lived dependency | `LINEAR`           |
+
+In practice, **`EXPONENTIAL`** is the recommended default for most network operations because it reduces unnecessary retry traffic while allowing transient issues to recover.
 
 
 
