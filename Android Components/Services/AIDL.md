@@ -750,3 +750,87 @@ Almost entire Android framework depends on Binder architecture.
 # One-Line Interview Definition
 
 > “AIDL is Android’s IPC framework that allows remote method invocation between processes using Binder.”
+
+
+ The Binder Thread Pool is a pool of threads that Android creates to handle incoming Binder IPC (Inter-Process Communication) requests.
+
+Why is it needed?
+
+When one process calls a service in another process (using Binder), the receiving process needs threads to handle those requests. Instead of creating a new thread for every request, Android maintains a Binder thread pool.
+
+How it works
+
+Process A (Client)
+       |
+       | Binder IPC
+       v
+-------------------------
+Process B (Service)
+-------------------------
+Binder Driver (Kernel)
+       |
+       v
++-----------------------+
+| Binder Thread Pool    |
+|  Thread 1             | --> Handles Request 1
+|  Thread 2             | --> Handles Request 2
+|  Thread 3             | --> Handles Request 3
++-----------------------+
+
+1. A client makes a Binder call.
+
+
+2. The Binder driver in the kernel delivers the request.
+
+
+3. An available thread from the Binder thread pool in the target process executes the service method.
+
+
+4. The result is returned to the caller.
+
+
+
+Why not use the main thread?
+
+If Binder requests were handled on the main thread:
+
+The UI could freeze.
+
+Multiple clients couldn't be served concurrently.
+
+
+The Binder thread pool allows multiple IPC requests to be processed in parallel.
+
+Android interview example
+
+class MyService : IMyService.Stub() {
+    override fun getData(): String {
+        // Runs on a Binder thread, NOT the main thread
+        return "Hello"
+    }
+}
+
+getData() executes on one of the Binder threads.
+
+Important interview points
+
+Binder thread pool is used for incoming IPC requests.
+
+It belongs to the server process, not the client.
+
+Threads are reused, avoiding the cost of creating new threads for every request.
+
+Multiple Binder calls can run simultaneously on different Binder threads.
+
+Binder threads are not the UI thread.
+
+Long-running work should not be done directly on a Binder thread. Instead, hand it off to a coroutine, executor, or background thread if it might block, so other IPC requests aren't delayed.
+
+
+Interview question
+
+Q: On which thread does an AIDL method execute?
+
+A: By default, it executes on a Binder thread from the Binder thread pool, not on the main thread.
+
+This is one of the most common Android IPC interview questions.
