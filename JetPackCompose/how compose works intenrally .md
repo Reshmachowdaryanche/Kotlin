@@ -1,10 +1,10 @@
-Jetpack Compose works by replacing the traditional XML + imperative UI approach with a **declarative UI runtime**. Instead of telling Android *how* to update views, you describe *what* the UI should look like for a given state. The Compose runtime determines what actually needs to change.
+If you're referring to **Jetpack Compose**, its internals are very different from the traditional Android View system. Instead of creating and mutating a tree of UI widgets directly, Compose describes the UI as a function of state and efficiently updates only what changes.
 
-Here's a breakdown of what happens internally.
+Here's how it works internally.
 
-## 1. `@Composable` functions are transformed by the compiler
+### 1. Composable functions describe the UI
 
-When you write:
+A composable is just a Kotlin function annotated with `@Composable`.
 
 ```kotlin
 @Composable
@@ -13,110 +13,97 @@ fun Greeting(name: String) {
 }
 ```
 
-The Compose compiler rewrites it into something conceptually like:
+This function doesn't directly draw anything. Instead, it emits instructions that Compose records.
+
+---
+
+### 2. The Compose Compiler transforms your code
+
+The Compose compiler plugin rewrites your composable functions.
+
+Your code conceptually becomes something like:
 
 ```kotlin
 fun Greeting(
     name: String,
     composer: Composer,
     changed: Int
-) {
-    // generated runtime code
-}
+)
 ```
 
-The compiler inserts:
+The compiler automatically inserts:
 
-* A hidden `Composer` parameter
-* Flags to detect parameter changes
-* Calls that record the UI structure
-* Logic for skipping recomposition when possible
+* a `Composer` parameter
+* change-tracking flags
+* calls that start/end groups
+* logic for skipping recomposition
 
-You never see this generated code.
+You never write this manually.
 
 ---
 
-## 2. Compose builds a Slot Table
+### 3. Composer records the UI
 
-Unlike the View system, Compose does **not** create a `View` for every composable.
+The **Composer** builds a data structure called the **Slot Table**.
 
-Instead, it stores UI structure in a data structure called the **Slot Table**.
-
-For example:
-
-```kotlin
-Column {
-    Text("A")
-    Text("B")
-}
-```
-
-Internally becomes something like:
+Imagine your composables:
 
 ```
-Root
- └── Column
-      ├── Text("A")
-      └── Text("B")
+App
+ ├── Column
+ │    ├── Text
+ │    └── Button
 ```
 
-The Slot Table stores:
+Instead of creating a permanent object tree immediately, Compose records:
 
-* composable hierarchy
+```
+Group 1: App
+Group 2: Column
+Group 3: Text
+Group 4: Button
+```
+
+Each group stores:
+
+* parameters
 * remembered values
-* state locations
+* state
 * keys
-* parameter information
+* child relationships
 
-Think of it as a lightweight tree describing the UI.
+This Slot Table is the heart of Compose.
 
 ---
 
-## 3. Composition phase
+### 4. `remember` stores values in the Slot Table
 
-During the first render:
+Example:
 
 ```kotlin
-setContent {
-    Greeting("John")
+val counter = remember {
+    mutableStateOf(0)
 }
 ```
 
-Compose executes every composable.
-
-Execution looks like:
+Compose does something like:
 
 ```
-Greeting()
-
-    ↓
-
-Text()
-
-    ↓
-
-Layout()
-
-    ↓
-
-Draw()
+Slot 10:
+    mutableStateOf(0)
 ```
 
-Every composable registers itself with the Composer.
+On recomposition:
 
-The runtime records
+* it reaches Slot 10
+* returns the existing object
+* doesn't recreate it
 
-* where it is
-* what parameters it received
-* what state it depends on
-
-This process is called **Composition**.
+Without `remember`, the object would be recreated every recomposition.
 
 ---
 
-## 4. State observation
-
-Suppose:
+### 5. State objects are observable
 
 ```kotlin
 var count by remember {
@@ -124,383 +111,199 @@ var count by remember {
 }
 ```
 
-Internally:
+`mutableStateOf` is a special observable object.
 
 ```
-MutableState<Int>
-      |
-      |
- Snapshot System
-      |
-      |
- Composer observes reads
+count = 5
 ```
 
-Whenever you read
+doesn't simply assign a value.
+
+Internally it roughly does:
+
+```
+state.value = 5
+
+↓
+
+notifySnapshotSystem()
+
+↓
+
+scheduleRecomposition()
+```
+
+Compose now knows some UI depends on this value.
+
+---
+
+### 6. Snapshot system tracks reads
+
+Compose has a **Snapshot** system.
+
+When a composable reads:
 
 ```kotlin
 Text("$count")
 ```
 
-Compose records
+Compose records:
 
 ```
-This Text depends on count
+Greeting
+    reads
+        count
 ```
 
-This dependency tracking is automatic.
-
----
-
-## 5. Snapshot system
-
-Compose has its own state management engine called the **Snapshot System**.
-
-Instead of directly storing values:
+Later:
 
 ```
-count = 0
-```
-
-It stores
-
-```
-MutableState
-
-value = 0
-version = 1
-```
-
-When you do
-
-```kotlin
 count++
 ```
 
-the snapshot:
+Compose knows exactly:
 
-```
-version++
+> Greeting depends on count
 
-notify observers
-```
-
-Every composable that previously read that state becomes invalid.
+Only that part of the UI needs recomposition.
 
 ---
 
-## 6. Recomposition
+### 7. Recomposition
 
 Suppose:
 
 ```kotlin
 Column {
-
     Text("$count")
-
     Button(...)
 }
 ```
 
-When
+When `count` changes:
 
-```kotlin
-count++
-```
+Compose does **not** rebuild everything.
 
-Compose does **not** execute everything again.
-
-Only the affected parts are recomposed.
+It recomposes only:
 
 ```
-Before
-
 Column
-   Text
-   Button
-
-After
-
-Column
-   Text   ← recomposed
-   Button ← skipped
+    Text   ← recomposed
+    Button ← skipped
 ```
 
-This is called **selective recomposition**.
+This is much more efficient than redrawing the entire UI.
 
 ---
 
-## 7. Skipping unchanged composables
+### 8. Skipping unchanged composables
 
-Consider:
+The compiler generates checks like:
 
-```kotlin
-Greeting(name)
 ```
-
-If `name` hasn't changed, the compiler-generated code checks change flags and can skip executing the function.
-
-Conceptually:
-
-```kotlin
-if (parameterChanged) {
-    Greeting(...)
+if (parametersChanged) {
+    executeComposable()
 } else {
     skip()
 }
 ```
 
-Skipping is one of the main reasons Compose performs well.
+For example:
+
+```kotlin
+Greeting("John")
+```
+
+If `"John"` hasn't changed and the function is stable, Compose skips executing it entirely.
+
+This optimization is called **skipping**.
 
 ---
 
-## 8. `remember`
+### 9. Layout phase
 
-Example:
+After recomposition, Compose performs layout.
 
-```kotlin
-val random = remember {
-    Random.nextInt()
-}
-```
-
-Without `remember`:
+Every layout follows a measure-and-place process.
 
 ```
-Every recomposition
+Column
+    measure()
+        Text
+        Button
 
-↓
-
-Random.nextInt()
-
-↓
-
-different value
+    place()
+        Text at y=0
+        Button at y=40
 ```
 
-With `remember`:
-
-```
-First composition
-
-↓
-
-store value in Slot Table
-
-↓
-
-Later recomposition
-
-↓
-
-reuse stored value
-```
-
-The value lives in the Slot Table until the composable leaves the composition.
-
----
-
-## 9. Layout phase
-
-After composition, Compose measures layouts.
-
-Every layout implements a measure policy.
-
-Example:
-
-```kotlin
-Column {
-    Text(...)
-    Button(...)
-}
-```
-
-Measurement proceeds roughly as:
-
-```
-Column.measure()
-
-↓
-
-measure Text
-
-↓
-
-measure Button
-
-↓
-
-calculate own size
-```
-
-The parent supplies constraints:
+Each layout receives constraints:
 
 ```
 minWidth
 maxWidth
-
 minHeight
 maxHeight
 ```
 
-Children return their measured sizes.
+Children choose their own size within those constraints.
 
 ---
 
-## 10. Placement
+### 10. Drawing
 
-After measurement:
+Finally, Compose issues drawing commands.
+
+For example:
 
 ```
-Column
-
-Text at y = 0
-
-Button at y = 40
+Draw Text
+Draw Rectangle
+Draw Image
+Draw Circle
 ```
 
-Compose determines where each child should be placed.
+These are translated into Android's graphics APIs (or platform-specific rendering on other Compose targets).
 
 ---
 
-## 11. Drawing
-
-Finally:
+## Complete flow
 
 ```
-Canvas
-
-↓
-
-draw Text
-
-↓
-
-draw Button
-
-↓
-
-draw background
+State changes
+      │
+      ▼
+Snapshot detects change
+      │
+      ▼
+Schedule recomposition
+      │
+      ▼
+Composer re-executes affected composables
+      │
+      ▼
+Update Slot Table
+      │
+      ▼
+Measure layouts
+      │
+      ▼
+Place children
+      │
+      ▼
+Draw to Canvas
 ```
-
-Compose renders using Android's graphics system rather than creating a separate `View` for each composable.
 
 ---
 
-## 12. What happens when state changes?
+## Why Compose is fast
 
-Example:
+Compose achieves good performance through several mechanisms:
 
-```kotlin
-var count by remember {
-    mutableStateOf(0)
-}
+* **Selective recomposition:** Only composables that depend on changed state are recomposed.
+* **Skipping:** Unchanged composables are not re-executed.
+* **Slot Table:** Stores composition state efficiently without rebuilding everything.
+* **Snapshot system:** Tracks exactly which state each composable reads.
+* **Compiler optimizations:** The Compose compiler inserts bookkeeping code automatically, reducing runtime overhead.
 
-Text("$count")
-
-Button {
-    count++
-}
-```
-
-Flow:
-
-```
-Button Click
-      │
-      ▼
-count++
-      │
-      ▼
-Snapshot version changes
-      │
-      ▼
-Composer notified
-      │
-      ▼
-Invalidate Text composable
-      │
-      ▼
-Recompose Text only
-      │
-      ▼
-Measure if needed
-      │
-      ▼
-Draw updated UI
-```
-
-The rest of the UI remains unchanged unless it also depends on `count`.
-
----
-
-## 13. Side effects
-
-Composable functions should be free of side effects, so Compose provides dedicated APIs:
-
-* `remember` → retain values across recompositions.
-* `LaunchedEffect` → run suspend functions tied to the composition lifecycle.
-* `DisposableEffect` → register and clean up resources when entering/leaving the composition.
-* `SideEffect` → publish state to objects outside Compose after a successful recomposition.
-* `produceState` → bridge asynchronous data into Compose state.
-
-This separation keeps recomposition predictable.
-
----
-
-## 14. End-to-end flow
-
-```text
-Kotlin Code
-      │
-      ▼
-Compose Compiler Plugin
-      │
-      ▼
-Generated Composer Calls
-      │
-      ▼
-Composition
-      │
-      ▼
-Slot Table Created
-      │
-      ▼
-Snapshot State Observed
-      │
-      ▼
-Measure
-      │
-      ▼
-Place
-      │
-      ▼
-Draw
-      │
-      ▼
-State Changes
-      │
-      ▼
-Selective Recomposition
-      │
-      ▼
-Only Changed UI Redrawn
-```
-
-## How this differs from the View system
-
-| Android Views                                      | Jetpack Compose                             |
-| -------------------------------------------------- | ------------------------------------------- |
-| XML defines UI                                     | Kotlin code defines UI                      |
-| One `View` object per widget                       | Lightweight composition tree and slot table |
-| Manual updates (`textView.text = ...`)             | UI automatically updates when state changes |
-| `findViewById()` and view references               | Direct function calls and state             |
-| Entire view hierarchy can be traversed for updates | Only affected composables are recomposed    |
-
-The key performance ideas behind Compose are:
-
-* **Compiler-generated code** that tracks changes.
-* A **Slot Table** that stores composition information and remembered values.
-* A **Snapshot** state system that automatically observes reads and writes.
-* **Selective recomposition**, so only composables affected by state changes are re-executed.
-* Separate **composition**, **layout**, and **drawing** phases, allowing work to be minimized when only certain aspects of the UI change.
+Unlike the traditional Android View system, which manages a mutable tree of `View` objects, Compose primarily rebuilds descriptions of the affected UI and applies only the necessary updates, leading to more efficient rendering and simpler state management.
