@@ -832,6 +832,129 @@ WorkManager.getInstance(this)
 
 ---
 
+Here’s a clean set of **notes you can keep for Doze mode + WorkManager expedited quota**:
+
+---
+
+# 📌 Doze Mode + WorkManager Expedited Work (Notes)
+
+## 💤 1. Doze Mode (Android)
+
+### What it is:
+
+A power-saving state when the device is **idle and stationary**.
+
+### Effects:
+
+* Background CPU and network are restricted
+* Wake-ups are delayed
+* Jobs are deferred until maintenance windows
+
+### Execution behavior:
+
+* Normal WorkManager jobs → **delayed**
+* Expedited work → **higher priority but still constrained by Doze**
+
+---
+
+## ⚡ 2. Expedited Work
+
+### What it is:
+
+A WorkManager feature for **urgent background tasks**.
+
+### Behavior:
+
+* Runs faster than normal work
+* May bypass some scheduling delays
+* Can be promoted to foreground service if needed
+
+### Limitations:
+
+* Not guaranteed immediate execution
+* Still affected by system states like Doze
+* Subject to quota limits
+
+---
+
+## 🎟️ 3. Expedited Work Quota
+
+### What it is:
+
+A **system-defined limit on how many expedited jobs an app can run in a time window**.
+
+### When quota is available:
+
+* Work runs as **high priority**
+* Executes as soon as system allows
+
+### When quota is exhausted:
+
+You must choose behavior:
+
+#### Option 1: Run as normal work
+
+```kotlin
+OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST
+```
+
+* Downgraded to normal WorkManager job
+* No urgency anymore
+
+#### Option 2: Drop work
+
+```kotlin
+OutOfQuotaPolicy.DROP_WORK_REQUEST
+```
+
+* Work is cancelled
+
+---
+
+## 🔄 4. Doze + Quota Combined Behavior
+
+### Case 1: Doze ON + Quota available
+
+* Work is accepted
+* Not executed immediately
+* Runs during **maintenance windows**
+* Higher priority than normal jobs
+
+---
+
+### Case 2: Doze ON + Quota exhausted
+
+* Work is downgraded or dropped (based on policy)
+* No expedited benefit remains
+
+---
+
+### Case 3: Device active (No Doze) + Quota available
+
+* Work runs quickly (may even be immediate)
+* Best-case execution scenario
+
+---
+
+## 🚨 Key Takeaways
+
+* Doze mode = **delays execution**
+* Expedited work = **prioritized scheduling, not instant execution**
+* Quota = **limit on how many fast executions you can use**
+* Even with quota, **Doze still controls when CPU/network is allowed**
+
+---
+
+## 🧠 One-line summary
+
+> Expedited work improves priority, but Doze mode controls timing, and quota controls how often you can use that priority.
+
+---
+
+If you want, I can convert this into a **cheat sheet table or interview notes format** too.
+
+---
+
 
 In **Android WorkManager**, a **backoff policy** determines **how long WorkManager waits before retrying a failed task** when your worker returns `Result.retry()`.
 
