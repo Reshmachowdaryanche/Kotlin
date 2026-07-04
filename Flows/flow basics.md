@@ -495,3 +495,10 @@ Output
 | `collect`         | Processes every emitted value sequentially                                                |
 | `collectLatest`   | Cancels processing of the previous value when a new value arrives                         |
 | `launchIn(scope)` | Starts collecting a flow in a given `CoroutineScope` without explicitly calling `collect` |
+
+
+---
+
+
+
+
