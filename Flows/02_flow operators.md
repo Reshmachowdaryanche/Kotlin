@@ -313,221 +313,174 @@ It behaves like `filter`, but with greater flexibility.
 
 # flatMap Operators
 
-These operators are used when **each emitted value creates another Flow**.
+In **Kotlin Flows**, *flatMap operators* are used when each emitted value produces **another Flow**, and you want to **flatten those inner flows into a single stream**.
 
-Imagine you have user IDs and must fetch user details for each ID.
-
-```
-1
- ↓
-Flow<User>
-
-2
- ↓
-Flow<User>
-
-3
- ↓
-Flow<User>
-```
-
-Now you have **Flow of Flows**.
-
-`flatMap...` operators flatten them into one flow.
+This is similar to `flatMap` in collections, but for asynchronous streams.
 
 ---
 
-# 4. flatMapConcat
+# 🔷 Why “flatMap” exists in Flow
 
-Processes **one inner flow at a time**.
+Normally:
 
-Next flow starts only after the previous finishes.
+* `map` → 1 value → 1 transformed value
+* but sometimes:
 
-Example
+  * 1 value → a whole Flow (async stream)
+
+So you need:
+
+> “Take a Flow of Flows and flatten it into one Flow”
+
+---
+
+# 🔹 Core flatMap operators in Flow
+
+There are 3 main ones:
+
+## 1. `flatMapConcat`
+
+## 2. `flatMapMerge`
+
+## 3. `flatMapLatest`
+
+They differ in **ordering and concurrency behavior**.
+
+---
+
+# 🔶 1. `flatMapConcat` (sequential)
+
+### ✔ Behavior
+
+* Runs inner flows **one after another**
+* Waits for one to finish before starting next
+
+### Example
 
 ```kotlin
-fun getFlow(value: Int) = flow {
-    emit("$value-A")
-    delay(100)
-    emit("$value-B")
-}
-
-flowOf(1,2)
-    .flatMapConcat {
-        getFlow(it)
+flowOf(1, 2, 3)
+    .flatMapConcat { value ->
+        flow {
+            emit("$value-A")
+            delay(100)
+            emit("$value-B")
+        }
     }
-    .collect {
-        println(it)
-    }
+    .collect { println(it) }
 ```
 
-Output
+### Output order
 
 ```
 1-A
 1-B
 2-A
 2-B
+3-A
+3-B
 ```
 
-Visualization
+### Use when:
 
-```
-Flow1
-↓↓
-Complete
-
-↓
-
-Flow2
-↓↓
-Complete
-```
-
-Everything is sequential.
+* Order matters
+* You want strict sequencing
 
 ---
 
-# 5. flatMapLatest
+# 🔶 2. `flatMapMerge` (concurrent)
 
-Cancels the previous flow when a new value arrives.
+### ✔ Behavior
 
-Very common in search.
+* Starts all inner flows **at the same time**
+* Merges results as they arrive
 
-Example
-
-```kotlin
-flow {
-    emit("A")
-    delay(100)
-    emit("B")
-}
-.flatMapLatest {
-
-    flow {
-        emit("Start $it")
-        delay(300)
-        emit("End $it")
-    }
-}
-.collect {
-    println(it)
-}
-```
-
-Output
-
-```
-Start A
-Start B
-End B
-```
-
-`A` was cancelled.
-
-Visualization
-
-```
-A starts
-
-↓
-
-B arrives
-
-↓
-
-Cancel A
-
-↓
-
-Process B
-```
-
-### Real Example
-
-Search box
-
-User types
-
-```
-A
-
-An
-
-And
-
-Andr
-
-Android
-```
-
-You don't want five API calls.
-
-Each new search cancels the previous request.
-
----
-
-# 6. flatMapMerge
-
-Runs inner flows **concurrently**.
-
-Example
+### Example
 
 ```kotlin
-flowOf(1,2)
-    .flatMapMerge {
-
+flowOf(1, 2, 3)
+    .flatMapMerge { value ->
         flow {
-            emit("$it Start")
-            delay(300)
-            emit("$it End")
+            delay(100L * (4 - value))
+            emit("$value")
         }
     }
-    .collect {
-        println(it)
-    }
+    .collect { println(it) }
 ```
 
-Possible output
+### Output (order may vary)
 
 ```
-1 Start
-2 Start
-1 End
-2 End
+3
+2
+1
 ```
 
-The exact order of completion can vary because both inner flows run concurrently.
+### Use when:
 
-Visualization
-
-```
-Flow1 ────────►
-
-Flow2 ────────►
-
-Run Together
-```
+* You want parallel execution
+* Order does NOT matter
+* You want better performance
 
 ---
 
-# flatMap Comparison
+# 🔶 3. `flatMapLatest` (cancels previous)
 
-| Operator      | Behavior         |
-| ------------- | ---------------- |
-| flatMapConcat | Sequential       |
-| flatMapLatest | Cancels previous |
-| flatMapMerge  | Concurrent       |
+### ✔ Behavior
 
-Memory trick:
+* Cancels the previous inner flow
+* Only keeps the **latest one active**
+
+### Example
+
+```kotlin
+flowOf(1, 2, 3)
+    .onEach { delay(50) }
+    .flatMapLatest { value ->
+        flow {
+            repeat(3) {
+                delay(100)
+                emit("$value-$it")
+            }
+        }
+    }
+    .collect { println(it) }
+```
+
+### Output
+
+Only results from the **latest emission survive**, e.g.:
 
 ```
-Concat = Queue
-
-Latest = Cancel Old
-
-Merge = Parallel
+3-0
+3-1
+3-2
 ```
+
+### Use when:
+
+* Search suggestions
+* Typing updates
+* Live UI updates
+
+---
+
+# 🔥 Quick comparison
+
+| Operator        | Concurrency | Order | Cancels old? | Best for           |
+| --------------- | ----------- | ----- | ------------ | ------------------ |
+| `flatMapConcat` | No          | Yes   | No           | Sequential tasks   |
+| `flatMapMerge`  | Yes         | No    | No           | Parallel tasks     |
+| `flatMapLatest` | Yes         | No    | Yes          | Latest result only |
+
+---
+
+# 🧠 Simple mental model
+
+* **Concat** → queue
+* **Merge** → parallel workers
+* **Latest** → “only care about newest request”
+
+
 
 ---
 
