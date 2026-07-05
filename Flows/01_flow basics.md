@@ -403,49 +403,149 @@ Done 2
 
 # `launchIn`
 
-Instead of manually calling `collect`, you can launch collection inside a `CoroutineScope`.
+`launchIn` is a **terminal operator** that starts collecting a `Flow` inside a specified `CoroutineScope`.
 
-Example
+Instead of explicitly launching a coroutine and calling `collect()`, you can use `launchIn()` for a more concise and readable approach.
+
+## Syntax
 
 ```kotlin
-flowOf(
-    1,
-    2,
-    3
-)
-.onEach {
-    println(it)
-}
-.launchIn(scope)
+flow.launchIn(scope)
 ```
 
-Equivalent to
+- **Parameter:** `CoroutineScope`
+- **Returns:** `Job`
+
+---
+
+## Basic Example
+
+```kotlin
+flowOf(1, 2, 3)
+    .onEach {
+        println(it)
+    }
+    .launchIn(scope)
+```
+
+The flow starts collecting immediately in the provided `scope`.
+
+---
+
+## Equivalent Code
+
+The above code is equivalent to:
 
 ```kotlin
 scope.launch {
-    flow.collect {
+    flowOf(1, 2, 3).collect {
         println(it)
     }
 }
 ```
 
-This is commonly used with operators like `onEach`.
+`launchIn()` is simply a convenient shorthand for launching a coroutine and collecting the flow.
 
-Example in an Android `ViewModel`:
+---
+
+## Why `onEach`?
+
+Unlike `collect()`, `launchIn()` doesn't accept a lambda.
+
+Instead, actions for each emitted value are typically performed using `onEach()`.
+
+```kotlin
+flow
+    .onEach {
+        println("Received: $it")
+    }
+    .launchIn(scope)
+```
+
+You can also combine other operators:
+
+```kotlin
+flow
+    .onStart {
+        println("Flow started")
+    }
+    .onEach {
+        println(it)
+    }
+    .catch {
+        println("Error: $it")
+    }
+    .onCompletion {
+        println("Flow completed")
+    }
+    .launchIn(scope)
+```
+
+---
+
+## Android Example
+
+`launchIn()` is commonly used in Android with `viewModelScope` or `lifecycleScope`.
 
 ```kotlin
 repository.dataFlow
-    .onEach {
-        println(it)
+    .onEach { data ->
+        println(data)
     }
     .launchIn(viewModelScope)
 ```
 
-Advantages:
+Instead of writing:
 
-* Doesn't block the current coroutine.
-* Collection is automatically tied to the provided scope.
-* Commonly used with `viewModelScope` or `lifecycleScope`.
+```kotlin
+viewModelScope.launch {
+    repository.dataFlow.collect { data ->
+        println(data)
+    }
+}
+```
+
+---
+
+## `collect()` vs `launchIn()`
+
+| `collect()` | `launchIn()` |
+|-------------|--------------|
+| Suspends the current coroutine until the flow completes | Launches a new coroutine to collect the flow |
+| Accepts a lambda | Does not accept a lambda |
+| Returns `Unit` | Returns a `Job` |
+| Best for sequential code | Best for long-running observation |
+| Waits for completion | Returns immediately |
+
+---
+
+## Advantages
+
+- Reduces boilerplate by avoiding `scope.launch { collect { ... } }`
+- Starts flow collection in the provided `CoroutineScope`
+- Returns a `Job`, which can be cancelled if needed
+- Works naturally with operators like `onEach`, `onStart`, `catch`, and `onCompletion`
+- Ideal for continuously observing data streams
+
+---
+
+## Common Use Cases
+
+- Observing `StateFlow` or `SharedFlow`
+- Collecting UI state updates in Android
+- Listening for events throughout the lifecycle of a `ViewModel`
+- Background flow collection tied to a `CoroutineScope`
+
+---
+
+## Key Points
+
+- `launchIn()` is a **terminal operator**.
+- It **starts collecting** the flow immediately.
+- It requires a **CoroutineScope**.
+- It returns a **Job**.
+- It is commonly used together with `onEach()`.
+- The collection is automatically cancelled when the provided scope is cancelled (for example, when a `viewModelScope` is cleared).
 
 ---
 
