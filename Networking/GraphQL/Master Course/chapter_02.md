@@ -419,26 +419,300 @@ This is commonly referred to as an **N+1 request problem** from the client's per
 
 # 8. API Versioning
 
-REST APIs often introduce new versions when breaking changes are needed.
+API versioning is a way to **change an API without breaking existing applications** that already use it.
+
+Imagine you've released an Android app that talks to a server. Thousands of users have installed it. If you suddenly change the API, those older apps could stop working. Versioning lets the server support both the old and new formats for a while.
+
+## Without versioning
+
+Suppose your API initially returns user data like this:
+
+**Request**
+
+```http
+GET /users/1
+```
+
+**Response**
+
+```json
+{
+  "id": 1,
+  "name": "Alice"
+}
+```
+
+Your Android app expects the field `name`.
+
+Now you decide to split the name into first and last names.
+
+The API now returns:
+
+```json
+{
+  "id": 1,
+  "firstName": "Alice",
+  "lastName": "Smith"
+}
+```
+
+The old Android app still tries to read `name`.
+
+Result:
+
+* `name` is missing.
+* Parsing may fail or `name` becomes `null`.
+* The app may display incorrect data or crash.
+
+This is called a **breaking change**.
+
+---
+
+## With versioning
+
+Instead of changing the existing endpoint, you create a new version.
+
+### Version 1
+
+```http
+GET /api/v1/users/1
+```
+
+Response:
+
+```json
+{
+  "id": 1,
+  "name": "Alice"
+}
+```
+
+### Version 2
+
+```http
+GET /api/v2/users/1
+```
+
+Response:
+
+```json
+{
+  "id": 1,
+  "firstName": "Alice",
+  "lastName": "Smith"
+}
+```
+
+Now:
+
+* Old Android apps continue calling **v1**.
+* New Android apps call **v2**.
+* Nothing breaks.
+
+---
+
+## Why not just replace v1?
+
+Imagine this timeline:
+
+```
+2025
+↓
+Android App v1 released
+
+↓
+
+10,000 users install it
+
+↓
+
+Server changes API
+
+↓
+
+Those 10,000 apps are still installed
+```
+
+Many users:
+
+* haven't updated the app,
+* are offline for long periods, or
+* use older devices.
+
+If the server only supports the new API, all those older apps can stop working.
+
+That's why companies usually keep older API versions available for some time.
+
+---
+
+## Example with Retrofit
+
+### Old app
+
+```kotlin
+@GET("api/v1/users/{id}")
+suspend fun getUser(
+    @Path("id") id: Int
+): UserV1
+```
+
+Model:
+
+```kotlin
+data class UserV1(
+    val id: Int,
+    val name: String
+)
+```
+
+---
+
+### New app
+
+```kotlin
+@GET("api/v2/users/{id}")
+suspend fun getUser(
+    @Path("id") id: Int
+): UserV2
+```
+
+Model:
+
+```kotlin
+data class UserV2(
+    val id: Int,
+    val firstName: String,
+    val lastName: String
+)
+```
+
+Both apps work because they call different API versions.
+
+---
+
+## Problems with multiple versions
+
+### 1. Multiple versions to maintain
+
+Suppose your server has:
+
+```
+v1
+v2
+v3
+```
+
+Whenever you fix a bug, you may need to check whether it also affects all three versions.
 
 Example:
 
-```text
-/api/v1/users
-
-/api/v2/users
-
-/api/v3/users
+```
+v1 -> GET /users
+v2 -> GET /users
+v3 -> GET /users
 ```
 
-Problems:
+Even though the endpoint looks similar, each version may have different validation, fields, or business logic.
 
-* Multiple versions to maintain
-* Larger codebase
-* Old clients continue using old versions
-* Documentation becomes harder
+---
 
-Android developers sometimes have to support multiple API versions simultaneously.
+### 2. Larger codebase
+
+Your backend might contain code like:
+
+```
+UserControllerV1
+UserControllerV2
+UserControllerV3
+
+UserServiceV1
+UserServiceV2
+UserServiceV3
+```
+
+Supporting several versions means more code to maintain, test, and document.
+
+---
+
+### 3. Old clients continue using old versions
+
+Imagine:
+
+```
+Users on app v1 -> API v1
+Users on app v2 -> API v2
+Users on app v3 -> API v3
+```
+
+Even if you've released app v3, some users may still be on v1 because they haven't updated.
+
+The server must often continue supporting v1 until those users have moved to newer versions or until you decide to retire it.
+
+---
+
+### 4. Documentation becomes harder
+
+Instead of documenting one API, you need to document each version.
+
+For example:
+
+```
+v1
+GET /users
+
+Response:
+{
+   "id":1,
+   "name":"Alice"
+}
+```
+
+```
+v2
+GET /users
+
+Response:
+{
+   "id":1,
+   "firstName":"Alice",
+   "lastName":"Smith"
+}
+```
+
+Developers need to know which version they're integrating with.
+
+---
+
+## Why Android developers may support multiple API versions
+
+Suppose you work on an Android app.
+
+Some users have app version **1.0**, while others have updated to **2.0**.
+
+```
+Server
+├── API v1
+├── API v2
+```
+
+```
+Android users
+├── App 1.0 → calls API v1
+├── App 2.0 → calls API v2
+```
+
+During this transition, both API versions may need to stay active. If you're maintaining older app versions or gradually migrating users, you might need to understand and work with multiple API versions.
+
+---
+
+### Summary
+
+API versioning allows an API to evolve without breaking existing clients.
+
+* **v1** continues to support older apps.
+* **v2** introduces new features or breaking changes.
+* Older apps keep working while newer apps use the updated API.
+* The trade-off is that servers must maintain multiple versions, resulting in more code, testing, documentation, and operational effort.
 
 ---
 
