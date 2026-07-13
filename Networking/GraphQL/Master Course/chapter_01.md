@@ -294,6 +294,63 @@ Benefits:
 
 ---
 
+# Difference between Server and WebServer
+
+A **server** is a broad term for any computer or software that provides services to other computers (called clients) over a network. A **web server** is a specific type of server whose job is to deliver websites and web applications over HTTP or HTTPS.
+
+Here's a comparison:
+
+| Server                                                                                  | Web Server                                                                       |
+| --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| A general-purpose system that provides services or resources.                           | A server specifically designed to serve web content.                             |
+| Can provide many services, such as email, databases, file storage, DNS, or web hosting. | Primarily serves HTML, CSS, JavaScript, images, and handles HTTP/HTTPS requests. |
+| Uses different protocols depending on its purpose (e.g., FTP, SMTP, SSH, DNS).          | Uses HTTP and HTTPS.                                                             |
+| Examples: Database server, mail server, file server, DNS server.                        | Examples: Apache HTTP Server, Nginx, Microsoft IIS, Caddy.                       |
+
+### Analogy
+
+Think of a **server** as a **restaurant**.
+
+* The restaurant (server) offers many services.
+* The **waiter** who brings food to your table is like a **web server**—it specifically handles requests from customers (web browsers).
+
+### How a web server works
+
+When you type a URL like `https://example.com` into your browser:
+
+1. Your browser sends an HTTP request.
+2. The web server receives the request.
+3. It finds the requested webpage or forwards the request to an application if dynamic content is needed.
+4. It sends the response (HTML, images, CSS, JavaScript, etc.) back to your browser.
+
+### Different types of servers
+
+* **Web server** – Hosts websites and web applications.
+* **Database server** – Stores and manages data.
+* **File server** – Stores and shares files.
+* **Mail server** – Sends and receives email.
+* **DNS server** – Translates domain names into IP addresses.
+* **Application server** – Runs application logic for client applications.
+
+### Can one machine be both?
+
+Yes. A single physical or virtual machine can run multiple server roles at the same time. For example, one computer can simultaneously run:
+
+* A web server (serving a website)
+* A database server (storing the website's data)
+* An application server (processing business logic)
+
+### In summary
+
+* **Server** = Any system that provides services to clients.
+* **Web server** = A specialized server that provides web pages and web content using HTTP/HTTPS.
+
+So, **every web server is a server, but not every server is a web server**.
+
+---
+
+
+
 # 6. HTTP Fundamentals
 
 HTTP stands for
@@ -510,7 +567,7 @@ Example:
 
 ---
 
-# 12. REST APIs
+#  REST APIs
 
 REST stands for
 
@@ -533,6 +590,75 @@ DELETE /users/10
 ```
 
 Each endpoint represents a resource or action.
+
+---
+
+Yes. **REST (Representational State Transfer)** is most commonly implemented using **HTTP or HTTPS**.
+
+* **HTTP** is the communication protocol.
+* **HTTPS** is HTTP with encryption using TLS, making it secure.
+* **REST** is an architectural style that defines how clients and servers should interact.
+
+### How REST uses HTTP
+
+REST APIs use standard HTTP methods to perform operations on resources.
+
+| HTTP Method | REST Operation               | Example           |
+| ----------- | ---------------------------- | ----------------- |
+| `GET`       | Retrieve data                | `GET /users/1`    |
+| `POST`      | Create a new resource        | `POST /users`     |
+| `PUT`       | Replace an existing resource | `PUT /users/1`    |
+| `PATCH`     | Partially update a resource  | `PATCH /users/1`  |
+| `DELETE`    | Remove a resource            | `DELETE /users/1` |
+
+### Example
+
+A client wants information about user `1`.
+
+**Request:**
+
+```http
+GET /users/1 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+```
+
+**Response:**
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "id": 1,
+  "name": "Alice"
+}
+```
+
+### Why HTTPS is preferred
+
+REST works over both HTTP and HTTPS, but in production, **HTTPS should be used** because it:
+
+* Encrypts data in transit.
+* Prevents eavesdropping.
+* Protects against tampering.
+* Authenticates the server.
+
+Most public REST APIs today require HTTPS.
+
+### Relationship between REST and HTTP
+
+```
+Client (Browser/Mobile App)
+          │
+     HTTP/HTTPS
+          │
+     REST API (Web Server)
+          │
+    Database/Services
+```
+
+So, while REST is not itself a protocol, it is typically built on top of **HTTP/HTTPS**, using HTTP methods, URLs, headers, status codes, and representations such as JSON or XML.
 
 ---
 
@@ -713,3 +839,10 @@ The app never reads the database directly; it always communicates through the AP
 **Chapter 2 – Problems with REST APIs**
 
 You'll learn why GraphQL was created by exploring the limitations of REST, including over-fetching, under-fetching, multiple network requests, the N+1 problem, API versioning, and the impact these issues have on Android applications.
+
+
+---
+
+
+
+
