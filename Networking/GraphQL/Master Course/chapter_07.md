@@ -2203,7 +2203,463 @@ Because GraphQL needs to know exactly which fields of an object should be return
 
 ### 3. Difference between arguments and variables?
 
-Arguments are values passed to fields. Variables are reusable parameters supplied separately from the query.
+This is one of the most important GraphQL concepts. The difference is:
+
+* **Arguments** are the **inputs that a field accepts**.
+* **Variables** are **values supplied separately** and used to fill those arguments.
+
+Think of it like a function in JavaScript.
+
+## JavaScript analogy
+
+```javascript
+function getUser(id) {
+  // ...
+}
+
+getUser(1);
+```
+
+Here:
+
+* `id` is the **parameter** (similar to a GraphQL argument).
+* `1` is the **value** you pass (similar to a GraphQL variable or literal value).
+
+---
+
+## Arguments
+
+Suppose your schema has:
+
+```graphql
+type Query {
+  user(id: ID!): User
+}
+```
+
+Here,
+
+```graphql
+user(id: ID!)
+```
+
+means the `user` field accepts an argument called `id`.
+
+You can call it directly:
+
+```graphql
+query {
+  user(id: "1") {
+    name
+    email
+  }
+}
+```
+
+Here:
+
+* `user` → field
+* `id` → argument
+* `"1"` → literal value passed to the argument
+
+---
+
+## Variables
+
+Instead of hardcoding `"1"` into the query, you can use a variable.
+
+```graphql
+query GetUser($userId: ID!) {
+  user(id: $userId) {
+    name
+    email
+  }
+}
+```
+
+Notice:
+
+```graphql
+$userId
+```
+
+This is a **variable**.
+
+Then you send the value separately:
+
+```json
+{
+  "userId": "1"
+}
+```
+
+GraphQL substitutes:
+
+```graphql
+user(id: $userId)
+```
+
+becomes
+
+```graphql
+user(id: "1")
+```
+
+before executing the query.
+
+---
+
+## Why use variables?
+
+Without variables:
+
+```graphql
+query {
+  user(id: "1") {
+    name
+  }
+}
+```
+
+To fetch another user, you must change the query:
+
+```graphql
+query {
+  user(id: "2") {
+    name
+  }
+}
+```
+
+With variables, the query stays the same:
+
+```graphql
+query GetUser($userId: ID!) {
+  user(id: $userId) {
+    name
+  }
+}
+```
+
+Only the variables change:
+
+User 1:
+
+```json
+{
+  "userId": "1"
+}
+```
+
+User 2:
+
+```json
+{
+  "userId": "2"
+}
+```
+
+This is especially useful because clients can reuse the same query while sending different values.
+
+---
+
+## Another example
+
+Schema:
+
+```graphql
+type Query {
+  posts(limit: Int!, offset: Int!): [Post!]!
+}
+```
+
+### Using arguments directly
+
+```graphql
+query {
+  posts(limit: 5, offset: 0) {
+    title
+  }
+}
+```
+
+Here:
+
+* `limit` and `offset` are arguments.
+* `5` and `0` are literal values.
+
+---
+
+### Using variables
+
+```graphql
+query GetPosts($limit: Int!, $offset: Int!) {
+  posts(limit: $limit, offset: $offset) {
+    title
+  }
+}
+```
+
+Variables:
+
+```json
+{
+  "limit": 5,
+  "offset": 0
+}
+```
+
+Again, the variables provide the values for the arguments.
+
+---
+
+## Relationship
+
+You can think of it like this:
+
+```text
+Schema
+------
+user(id: ID!)
+
+        ▲
+        │
+     Argument
+
+Query
+-----
+user(id: $userId)
+
+        ▲
+        │
+     Variable
+
+Variables JSON
+--------------
+{
+  "userId": "1"
+}
+```
+
+---
+
+## Summary
+
+| Arguments                                   | Variables                                                       |
+| ------------------------------------------- | --------------------------------------------------------------- |
+| Defined by the schema as inputs to a field. | Defined in the query and supplied separately at execution time. |
+| Example: `user(id: ID!)`                    | Example: `$userId: ID!`                                         |
+| Used when calling a field: `user(id: ...)`  | Used to provide the value: `user(id: $userId)`                  |
+| Part of the schema and query syntax.        | Not part of the schema; they are part of the request.           |
+
+### A simple analogy
+
+Imagine an online food ordering app:
+
+* The restaurant menu says: **"Choose a spice level."** → That's the **argument**.
+* You select **"Medium"** when placing your order. → That's the **variable value**.
+
+The menu (schema) defines what can be chosen, while your order (request) supplies the actual choice.
+
+ The confusing part is that **a GraphQL request actually has two parts**:
+
+1. The **query** (the structure of what you want).
+2. The **variables** (the values to use).
+
+Think of it like filling out a form.
+
+---
+
+## Part 1: The query
+
+```graphql
+query GetUser($userId: ID!) {
+  user(id: $userId) {
+    name
+    email
+  }
+}
+```
+
+Notice that `$userId` is just a **placeholder**. It doesn't have a value yet.
+
+---
+
+## Part 2: The variables
+
+Along with the query, the client sends:
+
+```json
+{
+  "userId": "1"
+}
+```
+
+So the complete request looks something like this:
+
+```json
+{
+  "query": "query GetUser($userId: ID!) { user(id: $userId) { name email } }",
+  "variables": {
+    "userId": "1"
+  }
+}
+```
+
+The GraphQL server receives **both** the query and the variables.
+
+---
+
+## What the server does
+
+The server sees:
+
+Query:
+
+```graphql
+user(id: $userId)
+```
+
+Variables:
+
+```json
+{
+  "userId": "1"
+}
+```
+
+So it knows:
+
+> `$userId` has the value `"1"`.
+
+It then executes the query **as if** it were:
+
+```graphql
+user(id: "1")
+```
+
+You don't actually write or send this second version. It's just a way to understand what happens internally.
+
+---
+
+## JavaScript analogy
+
+Imagine this function:
+
+```javascript
+function getUser(id) {
+  console.log(id);
+}
+
+const userId = "1";
+
+getUser(userId);
+```
+
+Here:
+
+```javascript
+getUser(userId);
+```
+
+is **not** literally:
+
+```javascript
+getUser("1");
+```
+
+But since:
+
+```javascript
+userId = "1";
+```
+
+JavaScript passes `"1"` to the function.
+
+GraphQL variables work the same way.
+
+---
+
+## Another example
+
+Query:
+
+```graphql
+query GetPosts($limit: Int!) {
+  posts(limit: $limit) {
+    title
+  }
+}
+```
+
+Variables:
+
+```json
+{
+  "limit": 5
+}
+```
+
+The server executes it as if you had written:
+
+```graphql
+query {
+  posts(limit: 5) {
+    title
+  }
+}
+```
+
+---
+
+### Key idea
+
+* **Argument** = the field's input.
+
+  ```graphql
+  user(id: ...)
+  ```
+
+* **Variable** = the value supplied for that input.
+
+  ```graphql
+  $userId
+  ```
+
+* **Variables JSON** = where the actual value comes from.
+
+  ```json
+  {
+    "userId": "1"
+  }
+  ```
+
+So the flow is:
+
+```text
+Query
+-----
+user(id: $userId)
+          │
+          ▼
+Variables
+---------
+{
+  "userId": "1"
+}
+          │
+          ▼
+Execution
+---------
+user(id: "1")
+```
+
+**Question for you:** Which part is confusing?
+
+1. Why the query and variables are sent separately?
+2. Why we write `$userId` in the query?
+3. How the server matches `"userId"` in the JSON with `$userId` in the query?
+
 
 ---
 
