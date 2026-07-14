@@ -1,91 +1,215 @@
 
-The goal of Lesson 1 is:
+# Module 1: Internet & Networking Fundamentals
 
-> **Understand exactly what happens from the moment a user taps a button until data comes back to your app.**
+## Learning Objectives
 
----
+By the end of this module, you should be able to answer:
 
-# Lesson 1: Internet, HTTP & REST (Deep Dive)
+> **"Explain what happens when an Android app makes an API call."**
 
-Imagine you're building a weather app.
-
-The user taps:
-
-```text
-Get Weather
-```
-
-In your code, this eventually becomes:
-
-```kotlin
-viewModel.getWeather()
-```
-
-But what happens after that?
-
-Most developers imagine this:
-
-```text
-App
- ↓
-Server
-```
-
-Reality is much more interesting.
-
-```text
-┌───────────────────────┐
-│ Android App           │
-└──────────┬────────────┘
-           │
-           ▼
-     Internet Provider
-           │
-           ▼
-     DNS Server
-           │
-           ▼
-   Finds Server IP Address
-           │
-           ▼
-      Internet Routers
-           │
-           ▼
-      Server Computer
-           │
-           ▼
-     Application Server
-           │
-           ▼
-        Database
-           │
-           ▼
-     Application Server
-           │
-           ▼
-     Internet Routers
-           │
-           ▼
-      Android App
-```
-
-Your request travels across many systems before it reaches the server.
+This is one of the most common networking interview questions.
 
 ---
 
-# What is a Client?
+# Module Structure
 
-A client is simply something that **requests** information.
+We'll cover:
+
+1. Why Networking Exists
+2. Client & Server
+3. Internet
+4. IP Address
+5. Domain Name
+6. DNS
+7. URL
+8. URI
+9. Port
+10. Protocol
+11. HTTP
+12. HTTPS
+13. SSL/TLS
+14. Statelessness
+15. Complete Flow of an Android API Request
+16. Interview Questions
+
+---
+
+# Part 1 — Why Do We Need Networking?
+
+### Interview Question
+
+> Why does an Android app need networking?
+
+Most candidates answer:
+
+> To fetch data from the server.
+
+This isn't wrong, but it's incomplete.
+
+### Better Answer
+
+Networking enables **communication between distributed systems**.
+
+An Android app runs on the user's device, while business data (users, products, payments, orders) is stored on remote servers. Networking allows the app to exchange data with those servers over standardized protocols such as HTTP.
+
+This answer shows you understand the broader purpose.
+
+---
+
+## Example
+
+Imagine you're building an e-commerce app.
+
+Where is the product data stored?
+
+Not inside the APK.
+
+Because:
+
+* Products change.
+* Prices change.
+* Stock changes.
+* Images change.
+
+If all of this were inside the app:
+
+```text
+APK
+ ├── Products
+ ├── Prices
+ ├── Orders
+```
+
+every price update would require publishing a new app version.
+
+Instead:
+
+```text
+Android App
+      │
+      ▼
+Internet
+      │
+      ▼
+Backend Server
+      │
+      ▼
+Database
+```
+
+The app becomes a **client** that requests fresh data whenever needed.
+
+---
+
+# Part 2 — Client and Server
+
+This is one of the most fundamental concepts.
+
+## What is a Client?
+
+A client is a program that **initiates communication** by requesting a service or data from another system.
 
 Examples:
 
-* Android App
-* Chrome
-* Firefox
+* Android app
+* iOS app
+* Chrome browser
 * Postman
-* Curl
+* curl
 
-All of these are clients.
+Interview definition:
+
+> A client is a software application that initiates requests to a server and consumes the responses.
+
+Notice the phrase **initiates requests**.
+
+The client always starts the conversation.
+
+---
+
+## What is a Server?
+
+A server is a program that listens for incoming requests, processes them, and returns responses.
+
+It may:
+
+* Validate authentication.
+* Apply business logic.
+* Read/write a database.
+* Call external services.
+* Return an HTTP response.
+
+---
+
+## Restaurant Analogy
+
+```text
+Customer
+      │
+      ▼
+Waiter
+      │
+      ▼
+Kitchen
+```
+
+Customer → Client
+
+Kitchen → Server
+
+Menu → API
+
+Order → HTTP Request
+
+Food → HTTP Response
+
+The customer cannot enter the kitchen. They interact through the menu. Similarly, your app cannot directly access the database; it communicates through an API.
+
+---
+
+## Android Example
+
+You open Instagram.
+
+The app shows:
+
+* Followers
+* Likes
+* Posts
+
+Where is that data?
+
+Not inside your phone.
+
+Instead:
+
+```text
+Instagram App
+
+↓
+
+Instagram Server
+
+↓
+
+Database
+```
+
+The app asks:
+
+```http
+GET /feed
+```
+
+The server responds with the latest feed.
+
+---
+
+## Common Interview Follow-up
+
+> Can a server also act as a client?
+
+**Answer: Yes.**
 
 Example:
 
@@ -93,526 +217,267 @@ Example:
 Android App
       │
       ▼
-Please send me all users.
+API Gateway
+      │
+      ▼
+Payment Service
+      │
+      ▼
+Bank API
 ```
 
-The client starts the conversation.
+The Payment Service is a **server** for the Android app, but it becomes a **client** when it calls the Bank API.
+
+This demonstrates that "client" and "server" describe **roles in a communication**, not fixed types of software.
 
 ---
 
-# What is a Server?
+# Part 3 — What is the Internet?
 
-A server waits for requests.
+Many people answer:
 
-Example:
+> The internet is a network.
+
+That's too vague.
+
+### Better Answer
+
+The internet is a **global network of interconnected computer networks** that communicate using the **TCP/IP protocol suite**.
+
+Let's unpack that.
+
+Your phone isn't connected directly to a server in another country. Data travels through many intermediate devices.
 
 ```text
-Android
-   │
-   ▼
-GET /users
-
-──────────────►
-
-Server
-```
-
-The server processes the request.
-
-It might:
-
-* check permissions
-* access a database
-* perform calculations
-* call another API
-
-Then it responds.
-
-```text
-Server
-    │
-    ▼
-Here are your users.
-```
-
-A server never randomly sends data to your app. It responds when asked.
-
----
-
-# A Real-Life Analogy
-
-Think of a restaurant.
-
-Customer = Client
-
-Kitchen = Server
-
-Menu = API Documentation
-
-Order = HTTP Request
-
-Food = HTTP Response
-
-```
-Customer
-    │
-"I want Pizza"
-    │
-    ▼
-Waiter
-    │
-    ▼
-Kitchen
-    │
-Makes Pizza
-    │
-    ▼
-Customer
-```
-
-Notice something important:
-
-The customer never enters the kitchen.
-
-They use the menu.
-
-Your Android app never touches the database directly.
-
-It talks through an API.
-
----
-
-# What is an API?
-
-API stands for **Application Programming Interface**.
-
-A simpler definition:
-
-> An API is a set of rules that tells clients how to communicate with a server.
-
-Think of it as a menu.
-
-Restaurant Menu:
-
-```
-Pizza
-Burger
-Pasta
-```
-
-API Menu:
-
-```
-GET /users
-
-POST /login
-
-GET /products
-
-DELETE /cart/5
-```
-
-The API says:
-
-"You may ask for these things, but only in these ways."
-
----
-
-# Why Can't an App Access the Database Directly?
-
-Many beginners ask:
-
-> "Why doesn't my app connect directly to MySQL?"
-
-Imagine every user's phone connected directly to your production database.
-
-```
-Millions of Phones
-
-        │
-
-        ▼
-
-Database
-```
-
-Problems:
-
-* Huge security risk
-* Anyone could modify data
-* No business rules
-* No authentication
-* Difficult to scale
-
-Instead:
-
-```
-Android
-
-↓
-
-API Server
-
-↓
-
-Database
-```
-
-The server decides:
-
-* Can this user access data?
-* Is the token valid?
-* Does the user have permission?
-* Which data should be returned?
-
-The app never sees the database.
-
----
-
-# What is the Internet?
-
-The internet is simply a massive network of connected computers.
-
-```
 Phone
-
-↓
-
+   │
 Wi-Fi
-
-↓
-
+   │
+Router
+   │
 ISP
-
-↓
-
-Routers
-
-↓
-
-Other Routers
-
-↓
-
-Server
-```
-
-Data is broken into small packets and routed across many devices until it reaches its destination.
-
----
-
-# What is an IP Address?
-
-Every device connected to the internet has an address.
-
-Example:
-
-```
-142.250.190.78
-```
-
-A server also has an IP address.
-
-Without an IP address, nothing knows where to send data.
-
----
-
-# Why Don't We Use IP Addresses?
-
-Would you rather type:
-
-```
-142.250.190.78
-```
-
-or
-
-```
-google.com
-```
-
-Humans prefer names.
-
-Computers use numbers.
-
-That's why DNS exists.
-
----
-
-# DNS (Domain Name System)
-
-DNS is like the internet's phone book.
-
-When you type:
-
-```
-google.com
-```
-
-your phone asks:
-
-```
-DNS
-
-Where is google.com?
-```
-
-DNS replies:
-
-```
-142.250.190.78
-```
-
-Now your phone knows where to send the request.
-
-Flow:
-
-```
-google.com
-
-↓
-
-DNS
-
-↓
-
-142.250.190.78
-
-↓
-
-Server
-```
-
-Without DNS, you'd have to remember IP addresses.
-
----
-
-# What is a URL?
-
-Example:
-
-```
-https://api.github.com/users/octocat
-```
-
-Break it into parts:
-
-```
-https://
-```
-
-Protocol
-
-```
-api.github.com
-```
-
-Host (Domain)
-
-```
-/users/octocat
-```
-
-Path
-
-Another example:
-
-```
-https://example.com/products/15/reviews
-```
-
-Parts:
-
-```
-Protocol
-
-↓
-
-Domain
-
-↓
-
-Path
-
-↓
-
-Resource
-```
-
----
-
-# What is a Protocol?
-
-A protocol is simply an agreed set of rules.
-
-Humans use languages.
-
-Computers use protocols.
-
-Examples:
-
-```
-HTTP
-
-HTTPS
-
-FTP
-
-SMTP
-
-WebSocket
-```
-
-For Android REST APIs, the important ones are **HTTP** and **HTTPS**.
-
----
-
-# HTTP
-
-HTTP stands for **HyperText Transfer Protocol**.
-
-It defines:
-
-* how requests are sent
-* how responses are structured
-* status codes
-* headers
-* methods
-
-HTTP doesn't define *what* data is sent, only *how* communication happens.
-
-Think of it as the grammar of a conversation.
-
----
-
-# HTTPS
-
-HTTPS is HTTP plus encryption.
-
-```
-HTTP
-
-↓
-
-Encrypt Everything
-
-↓
-
-HTTPS
-```
-
-Without HTTPS, someone on the same network could potentially read your traffic.
-
-With HTTPS, the contents are encrypted in transit.
-
----
-
-# What Actually Gets Sent?
-
-Suppose you call:
-
-```kotlin
-api.getUsers()
-```
-
-The network doesn't send Kotlin code.
-
-It sends plain text that follows the HTTP protocol.
-
-A simplified request looks like this:
-
-```http
-GET /users HTTP/1.1
-Host: api.example.com
-Accept: application/json
-```
-
-The server responds with something like:
-
-```http
-HTTP/1.1 200 OK
-Content-Type: application/json
-
-[
-  {
-    "id": 1,
-    "name": "Alice"
-  }
-]
-```
-
-This is why understanding HTTP matters even if you use Retrofit.
-
----
-
-# Request and Response
-
-Every HTTP interaction has two parts.
-
-```
-Client
    │
-   │ Request
-   ▼
-Server
+Regional Network
    │
-   │ Response
-   ▼
-Client
+International Backbone
+   │
+Data Center
+   │
+Server
 ```
-
-A request asks for something.
-
-A response answers.
-
-No response can exist without a request.
 
 ---
 
-# What is Stateless?
+## How Does Data Travel?
 
-HTTP is **stateless**.
+Suppose you're downloading:
 
-This means the server treats each request independently.
+```text
+10 MB
+```
+
+Does the network send one huge block?
+
+No.
+
+It breaks the data into many **packets**.
+
+```text
+Packet 1
+
+Packet 2
+
+Packet 3
+
+Packet 4
+```
+
+Each packet can take a different route across the internet and is reassembled at the destination.
+
+This packet-based design makes the internet scalable and resilient.
+
+---
+
+# Part 4 — IP Address
+
+### Interview Question
+
+> What is an IP address?
+
+### Good Answer
+
+An IP address is a **unique logical address** assigned to a device on a network, allowing other devices to identify and communicate with it.
 
 Example:
 
-Request 1:
-
-```
-GET /users
+```text
+192.168.1.10
 ```
 
-Server responds.
+(Local/private IPv4)
 
-Five minutes later:
-
-```
-GET /users
+```text
+142.250.190.78
 ```
 
-The server does **not** automatically remember the earlier request.
-
-If the server needs to identify you, you usually send something like an authentication token with each request. We'll cover that in a later lesson.
+(Public IPv4)
 
 ---
 
-# Why This Matters for Android Developers
+## Why Do We Need IP Addresses?
 
-When you eventually write:
+Imagine sending a letter without an address.
 
-```kotlin
-@GET("users")
-suspend fun getUsers(): List<User>
+Impossible.
+
+Similarly, a server needs to know where to send the response.
+
+```text
+Client IP
+
+↓
+
+Server
+
+↓
+
+Response returns to Client IP
 ```
 
-Retrofit is ultimately producing an HTTP request like:
+---
 
-```http
-GET /users HTTP/1.1
-Host: api.example.com
-Accept: application/json
+## IPv4 vs IPv6
+
+Interviewers sometimes ask this.
+
+### IPv4
+
+32 bits
+
+Example:
+
+```text
+192.168.1.10
 ```
 
-The server doesn't know or care that your app is written in Kotlin or that you're using Retrofit. It only understands the HTTP request it receives.
+About 4.3 billion unique addresses.
 
+---
+
+### IPv6
+
+128 bits
+
+Example:
+
+```text
+2001:db8::8a2e:370:7334
+```
+
+Designed to provide a vastly larger address space.
+
+You don't need to memorize the exact numbers, but know **why IPv6 exists**.
+
+---
+
+# Part 5 — Public vs Private IP
+
+Private IP:
+
+```text
+192.168.x.x
+
+10.x.x.x
+
+172.16.x.x
+```
+
+Used within local networks (home, office).
+
+Public IP:
+
+Assigned by an ISP and reachable over the internet.
+
+Example:
+
+```text
+Android Phone
+
+↓
+
+Private IP
+
+↓
+
+Wi-Fi Router
+
+↓
+
+Public IP
+
+↓
+
+Internet
+```
+
+Your router performs **NAT (Network Address Translation)** so multiple devices can share a single public IP.
+
+---
+
+# Interview Questions
+
+### Q1. What is a client?
+
+**Expected Answer:**
+
+A client is a software application that initiates requests to another system to consume data or services.
+
+---
+
+### Q2. What is a server?
+
+A server is a software system that listens for requests, processes them, and returns responses.
+
+---
+
+### Q3. Can a server become a client?
+
+**Yes.** When it calls another service, it acts as a client in that interaction.
+
+---
+
+### Q4. What is an IP address?
+
+A unique logical address used to identify devices and route network traffic.
+
+---
+
+### Q5. Why do we need IP addresses?
+
+To uniquely identify communication endpoints so data can be delivered correctly.
+
+---
+
+### Q6. Why doesn't an Android app connect directly to a database?
+
+Because exposing the database would create serious security risks, bypass business rules, complicate scaling, and make authentication and authorization difficult. Instead, the app communicates with a backend API that enforces these concerns.
+
+---
+
+# Interview Tip
+
+One thing interviewers notice is whether you stop at definitions or explain **why** something exists.
+
+For example:
+
+❌ Weak:
+
+> "An IP address identifies a device."
+
+✅ Strong:
+
+> "An IP address uniquely identifies a device on a network and enables routers to deliver packets to the correct destination. Without IP addressing, devices wouldn't know where to send requests or responses."
+
+The second answer shows understanding, not memorization.
+
+---
