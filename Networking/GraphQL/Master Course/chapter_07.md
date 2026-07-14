@@ -693,113 +693,240 @@ Response:
 
 # 11. Fragments
 
-Fragments avoid repeating fields.
+**Fragments** in GraphQL let you **define a reusable set of fields** that can be included in multiple queries, mutations, or subscriptions. They help avoid repeating the same field selections.
 
-Imagine:
+## Why use fragments?
 
-```graphql
-user{
-
- id
-
- name
-
- email
-
-}
-
-friend{
-
- id
-
- name
-
- email
-
-}
-```
-
-Repeated code.
-
----
-
-Create fragment:
+Suppose you have this query:
 
 ```graphql
-fragment UserFields on User{
-
+query {
+  users {
     id
-
     name
-
     email
+  }
 
+  posts {
+    id
+    title
+    author {
+      id
+      name
+      email
+    }
+  }
 }
 ```
 
-Use it:
+Notice that the `User` fields (`id`, `name`, `email`) are repeated.
 
-```graphql
-query{
-
-    user(id:1){
-
-        ...UserFields
-
-    }
-
-    friend(id:2){
-
-        ...UserFields
-
-    }
-
-}
-```
+Instead, define a fragment.
 
 ---
 
-Benefits:
-
-* Less duplication
-* Easier maintenance
-* Consistent fields
-
----
-
-# Android Example
-
-A fragment:
-
-`UserFragment.graphql`
+## Basic syntax
 
 ```graphql
 fragment UserFields on User {
-
-    id
-
-    name
-
-    avatar
-
+  id
+  name
+  email
 }
+```
+
+Here:
+
+* `fragment UserFields` → fragment name.
+* `on User` → this fragment can only be used on the `User` type.
+* The fields inside are the reusable selection.
+
+---
+
+## Using a fragment
+
+```graphql
+query {
+  users {
+    ...UserFields
+  }
+
+  posts {
+    id
+    title
+    author {
+      ...UserFields
+    }
+  }
+}
+
+fragment UserFields on User {
+  id
+  name
+  email
+}
+```
+
+This is equivalent to writing:
+
+```graphql
+users {
+  id
+  name
+  email
+}
+```
+
+every time.
+
+---
+
+## Another example
+
+Given this schema:
+
+```graphql
+type User {
+  id: ID!
+  name: String!
+  email: String!
+  posts: [Post!]!
+}
+```
+
+Without fragments:
+
+```graphql
+query {
+  user(id: "1") {
+    id
+    name
+    email
+  }
+
+  users {
+    id
+    name
+    email
+  }
+}
+```
+
+With fragments:
+
+```graphql
+query {
+  user(id: "1") {
+    ...UserInfo
+  }
+
+  users {
+    ...UserInfo
+  }
+}
+
+fragment UserInfo on User {
+  id
+  name
+  email
+}
+```
+
+---
+
+## Fragments with nested fields
+
+Fragments can include nested objects too.
+
+```graphql
+fragment PostInfo on Post {
+  id
+  title
+  author {
+    id
+    name
+  }
+}
+```
+
+Use it like this:
+
+```graphql
+query {
+  posts {
+    ...PostInfo
+  }
+}
+```
+
+---
+
+## Inline fragments
+
+Inline fragments are useful when a field can return **different types**, such as a union or an interface.
+
+Example schema:
+
+```graphql
+union SearchResult = User | Post
 ```
 
 Query:
 
 ```graphql
-query GetProfile{
-
-    viewer{
-
-        ...UserFields
-
+query {
+  search {
+    ... on User {
+      id
+      name
+      email
     }
 
+    ... on Post {
+      id
+      title
+      content
+    }
+  }
 }
 ```
 
-Apollo generates reusable models.
+Here:
+
+* If the result is a `User`, GraphQL returns `id`, `name`, and `email`.
+* If the result is a `Post`, GraphQL returns `id`, `title`, and `content`.
+
+---
+
+## Fragment spreads
+
+The syntax:
+
+```graphql
+...UserFields
+```
+
+is called a **fragment spread** because it "spreads" the fields defined in the fragment into the current selection.
+
+---
+
+## Benefits of fragments
+
+* **Avoid duplication:** Define common fields once and reuse them.
+* **Improve maintainability:** Update a field selection in one place instead of many.
+* **Keep queries readable:** Large queries become easier to understand.
+* **Support type-specific fields:** Inline fragments let you query different fields based on the actual returned type.
+
+### Summary
+
+| Concept         | Example                                                                 |
+| --------------- | ----------------------------------------------------------------------- |
+| Named fragment  | `fragment UserFields on User { id name email }`                         |
+| Use a fragment  | `...UserFields`                                                         |
+| Inline fragment | `... on User { id name }`                                               |
+| Main purpose    | Reuse field selections and handle polymorphic types (interfaces/unions) |
+
+Fragments are especially valuable in larger applications, where the same object (such as `User` or `Post`) is queried in many places and you want a single, consistent definition of the fields to fetch.
 
 ---
 
