@@ -932,51 +932,264 @@ Fragments are especially valuable in larger applications, where the same object 
 
 # 12. Inline Fragments
 
-Used with:
+**Inline fragments** are used when you want to select fields **only if the returned object is a particular type**. They are most useful with **interfaces** and **unions**, where a field can return different object types.
 
-* Interfaces
-* Unions
+Unlike named fragments, inline fragments are written directly inside the query and don't have a separate name.
 
-Example:
-
-Schema:
+## Syntax
 
 ```graphql
-union SearchResult =
-User |
-Product
+... on TypeName {
+  field1
+  field2
+}
+```
+
+* `...` indicates a fragment.
+* `on TypeName` specifies the type it applies to.
+* The fields inside are returned only if the object is of that type.
+
+---
+
+## Example with a Union
+
+Suppose your schema has:
+
+```graphql
+union SearchResult = User | Post
+```
+
+And the types:
+
+```graphql
+type User {
+  id: ID!
+  name: String!
+  email: String!
+}
+
+type Post {
+  id: ID!
+  title: String!
+  content: String!
+}
+```
+
+The query:
+
+```graphql
+query {
+  search {
+    ... on User {
+      id
+      name
+      email
+    }
+
+    ... on Post {
+      id
+      title
+      content
+    }
+  }
+}
+```
+
+### What happens?
+
+Imagine `search` returns:
+
+* A `User`
+* A `Post`
+
+The response could be:
+
+```json
+{
+  "data": {
+    "search": [
+      {
+        "id": "1",
+        "name": "Alice",
+        "email": "alice@example.com"
+      },
+      {
+        "id": "10",
+        "title": "Learning GraphQL",
+        "content": "..."
+      }
+    ]
+  }
+}
+```
+
+For the first item (a `User`), GraphQL executes the `... on User` block.
+
+For the second item (a `Post`), GraphQL executes the `... on Post` block.
+
+---
+
+## Example with an Interface
+
+Suppose you have:
+
+```graphql
+interface Animal {
+  id: ID!
+  name: String!
+}
+
+type Dog implements Animal {
+  id: ID!
+  name: String!
+  breed: String!
+}
+
+type Cat implements Animal {
+  id: ID!
+  name: String!
+  livesLeft: Int!
+}
 ```
 
 Query:
 
 ```graphql
-query{
+query {
+  animals {
+    id
+    name
 
-    search{
-
-        ... on User{
-
-            name
-
-        }
-
-
-        ... on Product{
-
-            price
-
-        }
-
+    ... on Dog {
+      breed
     }
 
+    ... on Cat {
+      livesLeft
+    }
+  }
 }
 ```
 
-Meaning:
+Here:
 
-"If the result is User, get name."
+* Every `Animal` has `id` and `name`, so those are queried normally.
+* Only `Dog` objects have `breed`.
+* Only `Cat` objects have `livesLeft`.
 
-"If the result is Product, get price."
+---
+
+## Why not just request every field?
+
+This would be invalid:
+
+```graphql
+query {
+  animals {
+    id
+    name
+    breed
+    livesLeft
+  }
+}
+```
+
+because the `Animal` interface doesn't define `breed` or `livesLeft`. GraphQL doesn't know whether every `Animal` has those fields.
+
+Inline fragments tell GraphQL:
+
+> "If this object is a `Dog`, then fetch `breed`."
+
+---
+
+## Named fragment vs. inline fragment
+
+### Named fragment
+
+Reusable:
+
+```graphql
+fragment UserFields on User {
+  id
+  name
+}
+
+query {
+  users {
+    ...UserFields
+  }
+}
+```
+
+---
+
+### Inline fragment
+
+Not reusable; written where it's needed:
+
+```graphql
+query {
+  search {
+    ... on User {
+      id
+      name
+    }
+
+    ... on Post {
+      id
+      title
+    }
+  }
+}
+```
+
+---
+
+## Inline fragment on the same type
+
+You can technically write:
+
+```graphql
+query {
+  user(id: "1") {
+    ... on User {
+      id
+      name
+      email
+    }
+  }
+}
+```
+
+But this is unnecessary because `user` already returns a `User`. It's equivalent to:
+
+```graphql
+query {
+  user(id: "1") {
+    id
+    name
+    email
+  }
+}
+```
+
+Inline fragments are most useful when the exact runtime type **isn't known in advance**, such as with interfaces or unions.
+
+---
+
+## Summary
+
+| Named Fragment                              | Inline Fragment                                     |
+| ------------------------------------------- | --------------------------------------------------- |
+| Has a name                                  | No name                                             |
+| Can be reused                               | Used only where written                             |
+| Good for avoiding repeated field selections | Good for selecting fields based on the runtime type |
+| Example: `...UserFields`                    | Example: `... on User { name }`                     |
+
+**Rule of thumb:**
+
+* Use **named fragments** to reuse the same field selections in multiple places.
+* Use **inline fragments** when a field may return different object types (typically interfaces or unions), and you need different fields depending on the actual type returned.
 
 ---
 
