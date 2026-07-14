@@ -1195,74 +1195,299 @@ Inline fragments are most useful when the exact runtime type **isn't known in ad
 
 # 13. Directives in Queries
 
-Directives modify query behavior.
+Great! Let's move on to **directives**.
 
-Two common directives:
+A **directive** is an instruction you give to GraphQL that tells it **how to execute a query or interpret part of the schema**.
 
-```
-@include
+Think of them as **modifiers** that change GraphQL's behavior.
 
-@skip
-```
+They always start with `@`.
 
 ---
 
-## @include
+# Example 1: `@include`
 
-Include field conditionally.
-
-Query:
+Suppose you have this query:
 
 ```graphql
-query($showEmail:Boolean!){
-
- user(id:1){
-
+query {
+  user(id: "1") {
+    id
     name
-
-    email @include(if:$showEmail)
-
- }
-
+    email
+  }
 }
 ```
 
-Variable:
+Normally, GraphQL always returns all three fields.
+
+Now suppose your application has a checkbox:
+
+> Show email? ✅ / ❌
+
+If the user doesn't want to see the email, you don't want to request it.
+
+You can use the `@include` directive.
+
+```graphql
+query GetUser($showEmail: Boolean!) {
+  user(id: "1") {
+    id
+    name
+    email @include(if: $showEmail)
+  }
+}
+```
+
+Variables:
 
 ```json
 {
- "showEmail":true
+  "showEmail": true
 }
 ```
 
-Result:
+Response:
 
 ```json
 {
- "name":"John",
- "email":"john@gmail.com"
+  "data": {
+    "user": {
+      "id": "1",
+      "name": "Alice",
+      "email": "alice@example.com"
+    }
+  }
 }
 ```
+
+If
+
+```json
+{
+  "showEmail": false
+}
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "user": {
+      "id": "1",
+      "name": "Alice"
+    }
+  }
+}
+```
+
+Notice the `email` field is omitted.
 
 ---
 
-## @skip
+# Example 2: `@skip`
 
-Skip a field.
+This is the opposite of `@include`.
 
 ```graphql
-query($hideEmail:Boolean!){
-
- user(id:1){
-
+query GetUser($hideEmail: Boolean!) {
+  user(id: "1") {
+    id
     name
-
-    email @skip(if:$hideEmail)
-
- }
-
+    email @skip(if: $hideEmail)
+  }
 }
 ```
+
+If
+
+```json
+{
+  "hideEmail": true
+}
+```
+
+GraphQL skips the field.
+
+Response
+
+```json
+{
+  "data": {
+    "user": {
+      "id": "1",
+      "name": "Alice"
+    }
+  }
+}
+```
+
+If
+
+```json
+{
+  "hideEmail": false
+}
+```
+
+Then GraphQL returns email.
+
+---
+
+# Difference
+
+`@include`
+
+```graphql
+email @include(if: true)
+```
+
+means
+
+> Include this field.
+
+---
+
+`@skip`
+
+```graphql
+email @skip(if: true)
+```
+
+means
+
+> Skip this field.
+
+---
+
+# Why are directives useful?
+
+Without directives you might write two separate queries.
+
+Query 1
+
+```graphql
+query {
+  user(id: "1") {
+    id
+    name
+  }
+}
+```
+
+Query 2
+
+```graphql
+query {
+  user(id: "1") {
+    id
+    name
+    email
+  }
+}
+```
+
+Instead, write one query and control it with a variable.
+
+---
+
+# Schema directives
+
+Directives are also used in schema definitions.
+
+Example:
+
+```graphql
+type User {
+  id: ID!
+  email: String! @deprecated(reason: "Use primaryEmail instead")
+}
+```
+
+The `@deprecated` directive tells clients:
+
+> This field still exists, but avoid using it in new code.
+
+Instead use another field.
+
+---
+
+# Custom directives
+
+GraphQL also lets you create your own directives.
+
+Example:
+
+```graphql
+type User {
+  password: String! @masked
+}
+```
+
+Here `@masked` isn't built into GraphQL.
+
+Your server can define what it means.
+
+For example:
+
+* Hide the password
+* Return `******`
+* Log access
+* Check permissions
+
+Another example:
+
+```graphql
+type Query {
+  users: [User] @auth
+}
+```
+
+A custom `@auth` directive might mean:
+
+> Only authenticated users can access this field.
+
+---
+
+# Where can directives be used?
+
+They can be applied to:
+
+* Fields
+
+```graphql
+email @skip(if: true)
+```
+
+* Fragment spreads
+
+```graphql
+...UserFields @include(if: $showUser)
+```
+
+* Inline fragments
+
+```graphql
+... on User @include(if: $isAdmin) {
+  email
+}
+```
+
+* Schema definitions (such as `@deprecated` or custom directives)
+
+---
+
+# Summary
+
+| Directive                        | Purpose                                                                    |
+| -------------------------------- | -------------------------------------------------------------------------- |
+| `@include(if: Boolean)`          | Include a field only if the condition is `true`.                           |
+| `@skip(if: Boolean)`             | Skip a field if the condition is `true`.                                   |
+| `@deprecated(reason: "...")`     | Mark a schema field or enum value as deprecated.                           |
+| Custom directives (e.g. `@auth`) | Add server-defined behavior such as authorization, logging, or validation. |
+
+**In simple terms:** a directive is an instruction attached to part of a GraphQL query or schema that tells GraphQL (or your server) to do something special with that field, fragment, or type.
 
 ---
 
