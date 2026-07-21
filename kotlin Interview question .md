@@ -1141,89 +1141,116 @@ println(result) // 19
 
 ## 39. What are Higher-Order functions in Kotlin?
 
-A higher-order function is a function that:
-- Takes another function as a parameter, OR
-- Returns a function as a result
 
-This is a key concept in functional programming and is widely used in Kotlin (e.g., `map`, `filter`, `forEach`).
+A higher-order function is a function that does at least one of the following:
 
-
-### 1. Function as a Parameter
-
-A function can accept another function as an argument.
-
-#### Example:
-
-```kotlin
-fun passMeFunction(abc: () -> Unit) {
-    println("Before function execution")
-
-    abc() // calling the passed function
-
-    println("After function execution")
-}
-````
-
-#### Usage:
-
-```kotlin
-fun sayHello() {
-    println("Hello from function")
+Takes another function (or lambda) as a parameter, or
+Returns another function (or lambda).
+1. Passing a lambda to a function ✅
+fun calculate(a: Int, b: Int, operation: (Int, Int) -> Int): Int {
+    return operation(a, b)
 }
 
 fun main() {
-    passMeFunction(::sayHello)
-}
-```
+    val result = calculate(10, 5) { x, y ->
+        x - y
+    }
 
-#### Output:
-
-```
-Before function execution
-Hello from function
-After function execution
-```
-
-
-
-### 2. Function Returning Another Function
-
-A function can return another function.
-
-#### Example:
-
-```kotlin
-fun add(a: Int, b: Int): Int {
-    return a + b
+    println(result)
 }
 
-fun returnMeAddFunction(): (Int, Int) -> Int {
-    return ::add
+
+Here,
+
+operation: (Int, Int) -> Int
+
+
+means operation is a function parameter.
+
+Since calculate() accepts a function as an argument, it is a higher-order function.
+
+2. Returning a lambda from a function ✅
+fun getMultiplier(): (Int) -> Int {
+    return { number -> number * 2 }
 }
-```
 
 
+Here, the return type
 
-#### Usage:
+(Int) -> Int
 
-```kotlin
+
+is itself a function.
+
+So getMultiplier() returns a function (lambda), making it a higher-order function.
+
+Usage:
+
+val multiplyBy2 = getMultiplier()
+
+println(multiplyBy2(8))
+
+
+Execution:
+
+getMultiplier()
+        ↓
+returns { number -> number * 2 }
+        ↓
+stored in multiplyBy2
+        ↓
+multiplyBy2(8)
+        ↓
+16
+
+Another higher-order function example
+fun operate(
+    a: Int,
+    b: Int,
+    operation: (Int, Int) -> Int
+): Int {
+    return operation(a, b)
+}
+
 fun main() {
-    val addFunction = returnMeAddFunction()
 
-    val result = addFunction(2, 2)
+    println(operate(10, 5) { x, y -> x + y }) // 15
 
-    println(result) // 4
+    println(operate(10, 5) { x, y -> x - y }) // 5
+
+    println(operate(10, 5) { x, y -> x * y }) // 50
 }
-```
 
 
+The same function performs different operations because the lambda changes.
 
-### 🔥 Key Points:
+Real-world examples
 
-* Higher-order functions improve code reusability
-* Commonly used in Kotlin collection functions (`map`, `filter`, `reduce`)
-* Helps write cleaner and more functional-style code
+Many Kotlin standard library functions are higher-order functions:
 
+numbers.forEach { println(it) }
+
+numbers.filter { it > 10 }
+
+numbers.map { it * 2 }
+
+numbers.sortedBy { it.age }
+
+numbers.any { it > 100 }
+
+
+All of these accept lambdas as arguments, so they are higher-order functions.
+
+Summary
+Function	Higher-order?	Reason
+calculate()	✅ Yes	Takes a lambda as a parameter
+getMultiplier()	✅ Yes	Returns a lambda
+forEach()	✅ Yes	Accepts a lambda
+map()	✅ Yes	Accepts a lambda
+filter()	✅ Yes	Accepts a lambda
+println()	❌ No	Doesn't take or return a function
+
+Rule to remember: If a function takes another function as a parameter or returns a function, it is a higher-order function. Lambdas are simply a convenient way to create the function values that higher-order functions work with.
 
 ## 40. What are extension functions in Kotlin?
 
