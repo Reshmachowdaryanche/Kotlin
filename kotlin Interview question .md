@@ -1146,7 +1146,8 @@ A higher-order function is a function that does at least one of the following:
 
 Takes another function (or lambda) as a parameter, or
 Returns another function (or lambda).
-1. Passing a lambda to a function ✅
+### 1. Passing a lambda to a function ✅
+```
 fun calculate(a: Int, b: Int, operation: (Int, Int) -> Int): Int {
     return operation(a, b)
 }
@@ -1158,22 +1159,23 @@ fun main() {
 
     println(result)
 }
+```
+
 
 
 Here,
 
-operation: (Int, Int) -> Int
-
+```operation: (Int, Int) -> Int
+```
 
 means operation is a function parameter.
 
 Since calculate() accepts a function as an argument, it is a higher-order function.
 
-2. Returning a lambda from a function ✅
+### 2. Returning a lambda from a function ✅
 fun getMultiplier(): (Int) -> Int {
     return { number -> number * 2 }
 }
-
 
 Here, the return type
 
@@ -1204,6 +1206,7 @@ multiplyBy2(8)
 16
 
 Another higher-order function example
+```
 fun operate(
     a: Int,
     b: Int,
@@ -1220,6 +1223,7 @@ fun main() {
 
     println(operate(10, 5) { x, y -> x * y }) // 50
 }
+```
 
 
 The same function performs different operations because the lambda changes.
