@@ -1138,16 +1138,97 @@ println(result) // 19
 * They make code more concise and readable.
 * Widely used in Kotlin collections (e.g., `map`, `filter`, `forEach`).
 
+### Examples
+ # Kotlin Lambdas - Notes
 
-## 39. What are Higher-Order functions in Kotlin?
+Lambdas are one of Kotlin's most powerful features. They allow you to write anonymous functions in a concise way and are widely used with collection operations like `map`, `filter`, `forEach`, `any`, `all`, and `reduce`.
 
+---
 
-A higher-order function is a function that does at least one of the following:
+# 1. Simple Lambda
 
-Takes another function (or lambda) as a parameter, or
-Returns another function (or lambda).
-### 1. Passing a lambda to a function ✅
+```kotlin
+val greet = { println("Hello!") }
+
+greet()
 ```
+
+**Output**
+
+```text
+Hello!
+```
+
+A lambda with no parameters and no return value.
+
+---
+
+# 2. Lambda with Parameters
+
+```kotlin
+val square: (Int) -> Int = { n ->
+    n * n
+}
+
+println(square(5))
+```
+
+**Output**
+
+```text
+25
+```
+
+Here:
+
+- `Int` → parameter type
+- `Int` → return type
+
+---
+
+# 3. Lambda with Two Parameters
+
+```kotlin
+val multiply: (Int, Int) -> Int = { a, b ->
+    a * b
+}
+
+println(multiply(4, 5))
+```
+
+**Output**
+
+```text
+20
+```
+
+Multiple parameters are separated by commas.
+
+---
+
+# 4. Lambda Stored in a Variable
+
+```kotlin
+val message = { name: String ->
+    "Welcome, $name!"
+}
+
+println(message("Alice"))
+```
+
+**Output**
+
+```text
+Welcome, Alice!
+```
+
+Lambdas can return values just like functions.
+
+---
+
+# 5. Passing a Lambda to a Function
+
+```kotlin
 fun calculate(a: Int, b: Int, operation: (Int, Int) -> Int): Int {
     return operation(a, b)
 }
@@ -1161,46 +1242,431 @@ fun main() {
 }
 ```
 
+**Output**
 
+```text
+5
+```
+
+The lambda is passed as an argument to `calculate()`.
+
+---
+
+# 6. Returning a Lambda from a Function
+
+```kotlin
+fun getMultiplier(): (Int) -> Int {
+    return { number ->
+        number * 2
+    }
+}
+
+fun main() {
+    val multiplyBy2 = getMultiplier()
+
+    println(multiplyBy2(8))
+}
+```
+
+**Output**
+
+```text
+16
+```
+
+Functions can return lambdas.
+
+---
+
+# 7. Using `forEach`
+
+### Without Lambda
+
+```kotlin
+val numbers = listOf(1, 2, 3)
+
+for (n in numbers) {
+    println(n)
+}
+```
+
+### With Lambda
+
+```kotlin
+val numbers = listOf(1, 2, 3)
+
+numbers.forEach {
+    println(it)
+}
+```
+
+**Output**
+
+```text
+1
+2
+3
+```
+
+`it` refers to the current element.
+
+---
+
+# 8. Using `map`
+
+```kotlin
+val numbers = listOf(1, 2, 3, 4)
+
+val squares = numbers.map {
+    it * it
+}
+
+println(squares)
+```
+
+**Output**
+
+```text
+[1, 4, 9, 16]
+```
+
+`map` transforms every element into a new value.
+
+---
+
+# 9. Using `filter`
+
+```kotlin
+val numbers = listOf(10, 15, 20, 25, 30)
+
+val evenNumbers = numbers.filter {
+    it % 2 == 0
+}
+
+println(evenNumbers)
+```
+
+**Output**
+
+```text
+[10, 20, 30]
+```
+
+`filter` keeps only the elements that satisfy the condition.
+
+---
+
+# 10. Using `sortedBy`
+
+```kotlin
+data class Student(val name: String, val marks: Int)
+
+fun main() {
+    val students = listOf(
+        Student("Alice", 80),
+        Student("Bob", 65),
+        Student("Charlie", 90)
+    )
+
+    val sorted = students.sortedBy {
+        it.marks
+    }
+
+    println(sorted)
+}
+```
+
+**Output**
+
+```text
+[
+    Student(name=Bob, marks=65),
+    Student(name=Alice, marks=80),
+    Student(name=Charlie, marks=90)
+]
+```
+
+`sortedBy` sorts elements based on the value returned by the lambda.
+
+---
+
+# 11. Using `any`
+
+```kotlin
+val numbers = listOf(3, 5, 8, 11)
+
+val hasEven = numbers.any {
+    it % 2 == 0
+}
+
+println(hasEven)
+```
+
+**Output**
+
+```text
+true
+```
+
+`any` returns `true` if at least one element matches the condition.
+
+---
+
+# 12. Using `all`
+
+```kotlin
+val numbers = listOf(2, 4, 6)
+
+val allEven = numbers.all {
+    it % 2 == 0
+}
+
+println(allEven)
+```
+
+**Output**
+
+```text
+true
+```
+
+`all` returns `true` only if every element matches the condition.
+
+---
+
+# 13. Using `reduce`
+
+```kotlin
+val numbers = listOf(1, 2, 3, 4)
+
+val sum = numbers.reduce { acc, value ->
+    acc + value
+}
+
+println(sum)
+```
+
+**Output**
+
+```text
+10
+```
+
+Here:
+
+- `acc` → accumulated result
+- `value` → current element
+
+`reduce` combines all elements into a single value.
+
+---
+
+# 14. Lambda with Explicit Return Type
+
+```kotlin
+val isAdult: (Int) -> Boolean = { age ->
+    age >= 18
+}
+
+println(isAdult(20))
+println(isAdult(15))
+```
+
+**Output**
+
+```text
+true
+false
+```
+
+The lambda returns a Boolean value.
+
+---
+
+# Common Collection Operations
+
+## `forEach`
+
+Performs an action on every element.
+
+```kotlin
+numbers.forEach {
+    println(it)
+}
+```
+
+---
+
+## `map`
+
+Transforms every element into a new value.
+
+```kotlin
+numbers.map {
+    it * 2
+}
+```
+
+---
+
+## `filter`
+
+Keeps only elements matching the condition.
+
+```kotlin
+numbers.filter {
+    it > 10
+}
+```
+
+---
+
+## `any`
+
+Checks whether any element satisfies the condition.
+
+```kotlin
+numbers.any {
+    it % 2 == 0
+}
+```
+
+---
+
+## `all`
+
+Checks whether every element satisfies the condition.
+
+```kotlin
+numbers.all {
+    it > 0
+}
+```
+
+---
+
+## `reduce`
+
+Combines all elements into a single result.
+
+```kotlin
+numbers.reduce { acc, x ->
+    acc + x
+}
+```
+
+---
+
+# Summary
+
+| Lambda | Purpose |
+|---------|---------|
+| `{ println("Hi") }` | No parameters |
+| `{ x -> x * x }` | One parameter |
+| `{ a, b -> a + b }` | Two parameters |
+| `numbers.forEach { println(it) }` | Perform an action on each element |
+| `numbers.map { it * 2 }` | Transform elements |
+| `numbers.filter { it > 10 }` | Select matching elements |
+| `numbers.any { it % 2 == 0 }` | Check if any element matches |
+| `numbers.all { it > 0 }` | Check if all elements match |
+| `numbers.reduce { acc, x -> acc + x }` | Combine elements into one value |
+
+---
+
+# Key Takeaways
+
+- A lambda is an anonymous function.
+- Lambdas can be stored in variables.
+- Lambdas can be passed to functions.
+- Functions can return lambdas.
+- The implicit parameter `it` is available when there is only one parameter.
+- Collection operations (`map`, `filter`, `forEach`, `any`, `all`, `reduce`, `sortedBy`) are where lambdas are used most frequently in Kotlin.
+- Lambdas make Kotlin code shorter, cleaner, and more expressive.
+
+# 39. Higher-Order Functions in Kotlin
+
+A **higher-order function** is a function that does **at least one** of the following:
+
+- Takes another function (or lambda) as a parameter.
+- Returns another function (or lambda).
+
+Higher-order functions are one of Kotlin's most powerful features and are widely used throughout the standard library.
+
+---
+
+# 1. Passing a Lambda to a Function
+
+```kotlin
+fun calculate(a: Int, b: Int, operation: (Int, Int) -> Int): Int {
+    return operation(a, b)
+}
+
+fun main() {
+    val result = calculate(10, 5) { x, y ->
+        x - y
+    }
+
+    println(result)
+}
+```
+
+**Output**
+
+```text
+5
+```
 
 Here,
 
-```
+```kotlin
 operation: (Int, Int) -> Int
 ```
 
-means operation is a function parameter.
+means `operation` is a function parameter.
 
-Since calculate() accepts a function as an argument, it is a higher-order function.
+Since `calculate()` accepts a function as an argument, it is a **higher-order function**.
 
-### 2. Returning a lambda from a function ✅
-```
+---
+
+# 2. Returning a Lambda from a Function
+
+```kotlin
 fun getMultiplier(): (Int) -> Int {
-    return { number -> number * 2 }
+    return { number ->
+        number * 2
+    }
 }
-``
+```
 
 Here, the return type
-```
+
+```kotlin
 (Int) -> Int
 ```
 
-
 is itself a function.
 
-So getMultiplier() returns a function (lambda), making it a higher-order function.
+So `getMultiplier()` returns a function (lambda), making it a **higher-order function**.
 
-Usage:
+### Usage
+
+```kotlin
+fun main() {
+    val multiplyBy2 = getMultiplier()
+
+    println(multiplyBy2(8))
+}
 ```
 
-val multiplyBy2 = getMultiplier()
+**Output**
 
-println(multiplyBy2(8))
+```text
+16
 ```
 
+### Execution Flow
 
-Execution:
-
+```text
 getMultiplier()
         ↓
 returns { number -> number * 2 }
@@ -1210,9 +1676,13 @@ stored in multiplyBy2
 multiplyBy2(8)
         ↓
 16
-
-Another higher-order function example
 ```
+
+---
+
+# 3. Another Higher-Order Function Example
+
+```kotlin
 fun operate(
     a: Int,
     b: Int,
@@ -1231,37 +1701,122 @@ fun main() {
 }
 ```
 
+**Output**
 
-The same function performs different operations because the lambda changes.
+```text
+15
+5
+50
+```
 
-Real-world examples
+The same function performs different operations because the lambda passed to it changes.
 
-Many Kotlin standard library functions are higher-order functions:
+---
 
-numbers.forEach { println(it) }
+# Real-World Examples
 
-numbers.filter { it > 10 }
+Many Kotlin standard library functions are higher-order functions because they accept lambdas.
 
-numbers.map { it * 2 }
+## `forEach`
 
-numbers.sortedBy { it.age }
+```kotlin
+numbers.forEach {
+    println(it)
+}
+```
 
-numbers.any { it > 100 }
+Performs an action on every element.
+
+---
+
+## `filter`
+
+```kotlin
+numbers.filter {
+    it > 10
+}
+```
+
+Keeps only the elements that satisfy the condition.
+
+---
+
+## `map`
+
+```kotlin
+numbers.map {
+    it * 2
+}
+```
+
+Transforms each element into a new value.
+
+---
+
+## `sortedBy`
+
+```kotlin
+numbers.sortedBy {
+    it.age
+}
+```
+
+Sorts elements based on the value returned by the lambda.
+
+---
+
+## `any`
+
+```kotlin
+numbers.any {
+    it > 100
+}
+```
+
+Returns `true` if at least one element satisfies the condition.
+
+---
+
+# Why Higher-Order Functions?
+
+Higher-order functions allow you to:
+
+- Write reusable code.
+- Avoid duplicate logic.
+- Pass different behaviors without rewriting functions.
+- Make code concise and expressive.
+
+Instead of creating separate functions for addition, subtraction, multiplication, etc., you can write one higher-order function and supply different lambdas.
+
+---
+
+# Summary
+
+| Function | Higher-Order? | Reason |
+|----------|---------------|--------|
+| `calculate()` | ✅ Yes | Takes a lambda as a parameter |
+| `getMultiplier()` | ✅ Yes | Returns a lambda |
+| `operate()` | ✅ Yes | Takes a lambda as a parameter |
+| `forEach()` | ✅ Yes | Accepts a lambda |
+| `map()` | ✅ Yes | Accepts a lambda |
+| `filter()` | ✅ Yes | Accepts a lambda |
+| `sortedBy()` | ✅ Yes | Accepts a lambda |
+| `any()` | ✅ Yes | Accepts a lambda |
+| `println()` | ❌ No | Doesn't take or return a function |
+
+---
+
+# Rule to Remember
+
+> **A function is a higher-order function if it either:**
+>
+> - **takes another function (or lambda) as a parameter**, or
+> - **returns another function (or lambda).**
+
+Lambdas are simply a concise way to create function values that higher-order functions can accept or return.
 
 
-All of these accept lambdas as arguments, so they are higher-order functions.
 
-Summary
-Function	Higher-order?	Reason
-calculate()	✅ Yes	Takes a lambda as a parameter
-getMultiplier()	✅ Yes	Returns a lambda
-forEach()	✅ Yes	Accepts a lambda
-map()	✅ Yes	Accepts a lambda
-filter()	✅ Yes	Accepts a lambda
-println()	❌ No	Doesn't take or return a function
-
-Rule to remember: If a function takes another function as a parameter or returns a function, it is a higher-order function. Lambdas are simply a convenient way to create the function values that higher-order functions work with.
-give it back
 ## 40. What are extension functions in Kotlin?
 
 Extension functions allow you to **add new functionality to existing classes** without modifying their source code or inheriting from them.
