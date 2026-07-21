@@ -1256,7 +1256,7 @@ filter()	✅ Yes	Accepts a lambda
 println()	❌ No	Doesn't take or return a function
 
 Rule to remember: If a function takes another function as a parameter or returns a function, it is a higher-order function. Lambdas are simply a convenient way to create the function values that higher-order functions work with.
-
+give it back
 ## 40. What are extension functions in Kotlin?
 
 Extension functions allow you to **add new functionality to existing classes** without modifying their source code or inheriting from them.
