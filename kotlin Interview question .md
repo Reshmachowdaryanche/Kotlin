@@ -1174,13 +1174,16 @@ means operation is a function parameter.
 Since calculate() accepts a function as an argument, it is a higher-order function.
 
 ### 2. Returning a lambda from a function ✅
+```
 fun getMultiplier(): (Int) -> Int {
     return { number -> number * 2 }
 }
+``
 
 Here, the return type
-
+```
 (Int) -> Int
+```
 
 
 is itself a function.
@@ -1188,10 +1191,12 @@ is itself a function.
 So getMultiplier() returns a function (lambda), making it a higher-order function.
 
 Usage:
+```
 
 val multiplyBy2 = getMultiplier()
 
 println(multiplyBy2(8))
+```
 
 
 Execution:
