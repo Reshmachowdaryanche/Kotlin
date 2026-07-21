@@ -1165,7 +1165,8 @@ fun main() {
 
 Here,
 
-```operation: (Int, Int) -> Int
+```
+operation: (Int, Int) -> Int
 ```
 
 means operation is a function parameter.
