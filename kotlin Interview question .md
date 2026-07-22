@@ -1928,6 +1928,381 @@ opr.minus(8)
 * Must have exactly one parameter
 * Makes code more readable (DSL-style code)
 * Commonly used in Kotlin libraries
+
+## 42. What is an Inline Function in Kotlin?
+
+An **inline function** is a function where the Kotlin compiler replaces the **function call with the actual function body** during compilation.
+
+This is mainly used to:
+
+- Reduce function call overhead
+- Improve performance (especially with lambdas)
+- Avoid creating extra objects for lambda expressions
+
+### Example
+
+```kotlin
+inline fun test(block: () -> Unit) {
+    println("Before execution")
+    block()
+    println("After execution")
+}
+```
+
+### Usage
+
+```kotlin
+fun main() {
+    test {
+        println("Inside lambda")
+    }
+}
+```
+
+---
+
+## What happens internally?
+
+The function call:
+
+```kotlin
+test {
+    println("Inside lambda")
+}
+```
+
+is conceptually transformed by the compiler into:
+
+```kotlin
+fun main() {
+    println("Before execution")
+    println("Inside lambda")
+    println("After execution")
+}
+```
+
+Notice that:
+
+- The function body is copied directly into the call site.
+- The lambda body is also copied.
+- No lambda object is created.
+- No `invoke()` call is made.
+
+---
+
+## Compilation Flow
+
+### Source Code
+
+```kotlin
+test {
+    println("Inside lambda")
+}
+```
+
+### Compiler Output (Conceptually)
+
+```kotlin
+println("Before execution")
+println("Inside lambda")
+println("After execution")
+```
+
+---
+
+## Memory Diagram
+
+```text
+main()
+ │
+ ├── println("Before execution")
+ ├── println("Inside lambda")
+ └── println("After execution")
+```
+
+Nothing is allocated for the lambda.
+
+---
+
+## Advantages of `inline`
+
+- Eliminates function call overhead
+- Avoids lambda object creation
+- Faster execution for higher-order functions
+- Widely used in Kotlin standard library
+
+---
+
+## 43. What is `noinline` in Kotlin?
+
+When a function is marked as `inline`, **all lambda parameters are inlined by default**.
+
+If you don't want a particular lambda to be inlined, mark it with the `noinline` keyword.
+
+### Example
+
+```kotlin
+inline fun test(
+    block1: () -> Unit,
+    noinline block2: () -> Unit
+) {
+    println("Start")
+    block1()
+    block2()
+    println("End")
+}
+```
+
+### Usage
+
+```kotlin
+fun main() {
+    test(
+        { println("Inline") },
+        { println("Noinline") }
+    )
+}
+```
+
+---
+
+# What happens internally?
+
+### `block1` (`inline`)
+
+Since `block1` is inline, the compiler copies its body directly into the call site.
+
+Conceptually:
+
+```kotlin
+println("Start")
+println("Inline")
+```
+
+There is **no**:
+
+```kotlin
+block1()
+```
+
+or
+
+```kotlin
+block1.invoke()
+```
+
+The compiler simply pastes the lambda body.
+
+---
+
+### `block2` (`noinline`)
+
+The compiler cannot inline `block2`.
+
+Instead, it creates a function object.
+
+Conceptually:
+
+```kotlin
+val block2 = object : Function0<Unit> {
+    override fun invoke() {
+        println("Noinline")
+    }
+}
+```
+
+When executed:
+
+```kotlin
+block2.invoke()
+```
+
+This is a normal virtual method call.
+
+---
+
+## Compiler Transformation
+
+### Original Source
+
+```kotlin
+test(
+    { println("Inline") },
+    { println("Noinline") }
+)
+```
+
+### Conceptual Compiler Output
+
+```kotlin
+fun main() {
+
+    println("Start")
+
+    // Inline lambda copied here
+    println("Inline")
+
+    // noinline lambda becomes an object
+    val block2 = object : Function0<Unit> {
+        override fun invoke() {
+            println("Noinline")
+        }
+    }
+
+    block2.invoke()
+
+    println("End")
+}
+```
+
+---
+
+## Visual Comparison
+
+### `inline`
+
+**Source**
+
+```kotlin
+block1()
+```
+
+**Compiler changes it to**
+
+```kotlin
+println("Inline")
+```
+
+Result:
+
+- No object created
+- No `invoke()` call
+
+---
+
+### `noinline`
+
+**Source**
+
+```kotlin
+block2()
+```
+
+**Compiler changes it to**
+
+```kotlin
+val block2 = object : Function0<Unit> {
+    override fun invoke() {
+        println("Noinline")
+    }
+}
+
+block2.invoke()
+```
+
+Result:
+
+- Function object created
+- Extra `invoke()` method call
+
+---
+
+## Memory Diagram
+
+### `inline`
+
+```text
+main()
+ │
+ ├── println("Start")
+ ├── println("Inline")
+ └── println("End")
+```
+
+Nothing is allocated for the lambda.
+
+---
+
+### `noinline`
+
+```text
+Heap
+┌────────────────────────────┐
+│ Function0 object           │
+│ invoke()                   │
+│ println("Noinline")        │
+└────────────────────────────┘
+
+main()
+ │
+ ├── create Function0 object
+ ├── invoke()
+ └── return
+```
+
+A lambda object exists on the heap (or another allocation mechanism depending on JVM optimizations), and `invoke()` is called.
+
+---
+
+## Why is `noinline` slower?
+
+There are two main costs.
+
+### 1. Object Creation
+
+```kotlin
+object : Function0<Unit> { ... }
+```
+
+A function object must be created (unless optimized away by the JVM).
+
+---
+
+### 2. Extra Method Call
+
+Instead of directly executing:
+
+```kotlin
+println("Inline")
+```
+
+the program executes:
+
+```kotlin
+lambda.invoke()
+```
+
+This introduces:
+
+- An extra function call
+- Typically a virtual method dispatch
+
+---
+
+## Difference Between `inline` and `noinline`
+
+| Feature | `inline` | `noinline` |
+|---------|----------|------------|
+| Function body copied at call site | ✅ Yes | ❌ No |
+| Lambda object created | ❌ No | ✅ Yes |
+| Uses `invoke()` | ❌ No | ✅ Yes |
+| Function call overhead | None | Present |
+| Performance | Faster | Slightly slower |
+| Can be stored or passed around | Limited | Yes |
+
+---
+
+## Quick Interview Explanation
+
+### `inline`
+
+The compiler replaces the function call and lambda call with their actual code. No lambda object is created, and there is no `invoke()` call.
+
+### `noinline`
+
+The compiler keeps the lambda as a regular `Function0` object. It creates the object and executes it using `invoke()`, which adds allocation overhead and an extra method call.
+
+
 ## 44. What are Reified Types in Kotlin?
 
 In Kotlin, **reified types** are used with **inline functions** to allow access to a generic type parameter **at runtime**.
