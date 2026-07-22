@@ -2059,6 +2059,8 @@ lambda.invoke()
 
 
 
+
+
 ### 🔥 Difference Between inline and noinline
 
 | Feature                | inline     | noinline        |
@@ -2077,6 +2079,246 @@ lambda.invoke()
 * `noinline` prevents specific lambdas from being inlined
 * Internally, `noinline` lambdas are converted into function objects and called using `invoke()`
 
+
+# Kotlin `inline` vs `noinline` (Compilation Explained)
+
+The easiest way to understand `inline` and `noinline` is to compare the code **before** and **after** compilation.
+
+## Example
+
+```kotlin
+inline fun test(
+    block1: () -> Unit,
+    noinline block2: () -> Unit
+) {
+    println("Start")
+    block1()
+    block2()
+    println("End")
+}
+```
+
+### Call Site
+
+```kotlin
+fun main() {
+    test(
+        { println("Inline") },
+        { println("Noinline") }
+    )
+}
+```
+
+---
+
+# What happens for `block1` (`inline`)
+
+Since `block1` is **inline**, the compiler copies its body directly into `main()`.
+
+Conceptually, it becomes:
+
+```kotlin
+fun main() {
+
+    // Body of test() copied here
+
+    println("Start")
+
+    // block1() replaced with lambda body
+    println("Inline")
+
+    // block2 is still a normal object
+    val block2 = object : Function0<Unit> {
+        override fun invoke() {
+            println("Noinline")
+        }
+    }
+
+    block2.invoke()
+
+    println("End")
+}
+```
+
+Notice there is **no call like**:
+
+```kotlin
+block1.invoke()
+```
+
+or
+
+```kotlin
+block1()
+```
+
+The compiler literally pastes:
+
+```kotlin
+println("Inline")
+```
+
+at the call site.
+
+---
+
+# What happens for `block2` (`noinline`)
+
+The compiler **cannot** paste its code.
+
+Instead, it creates a function object.
+
+Conceptually:
+
+```kotlin
+val block2 = object : Function0<Unit> {
+    override fun invoke() {
+        println("Noinline")
+    }
+}
+```
+
+When `test()` wants to execute it:
+
+```kotlin
+block2.invoke()
+```
+
+This is a normal virtual function call.
+
+---
+
+# Visual Comparison
+
+## `inline`
+
+### Source
+
+```kotlin
+block1()
+```
+
+### Compiler changes it to
+
+```kotlin
+println("Inline")
+```
+
+**Result:**
+
+- No object created
+- No `invoke()` call
+
+---
+
+## `noinline`
+
+### Source
+
+```kotlin
+block2()
+```
+
+### Compiler changes it to
+
+```kotlin
+val block2 = object : Function0<Unit> {
+    override fun invoke() {
+        println("Noinline")
+    }
+}
+
+block2.invoke()
+```
+
+**Result:**
+
+- Function object created
+- Extra `invoke()` method call
+
+---
+
+# Memory Diagram
+
+## `inline`
+
+```text
+main()
+ │
+ ├── println("Start")
+ ├── println("Inline")
+ ├── println("End")
+```
+
+Nothing is allocated for the lambda.
+
+---
+
+## `noinline`
+
+```text
+Heap
+┌────────────────────────────┐
+│ Function0 object           │
+│ invoke()                   │
+│ println("Noinline")        │
+└────────────────────────────┘
+
+main()
+ │
+ ├── create Function0 object
+ ├── invoke()
+ └── return
+```
+
+A lambda object exists on the heap (or another allocation mechanism depending on JVM optimizations), and `invoke()` is called.
+
+---
+
+# Why is `noinline` slower?
+
+There are two main costs:
+
+## 1. Object Creation
+
+```kotlin
+object : Function0<Unit> { ... }
+```
+
+A function object has to be created (unless the JVM optimizes it away).
+
+---
+
+## 2. Extra Method Call
+
+Instead of directly executing:
+
+```kotlin
+println("Inline")
+```
+
+the program executes:
+
+```kotlin
+lambda.invoke()
+```
+
+This introduces:
+
+- An extra function call
+- Typically a virtual method dispatch
+
+---
+
+# Quick Interview Explanation
+
+### `inline`
+
+The compiler replaces the lambda call with the lambda's actual code. No lambda object is created, and there is no `invoke()` call.
+
+### `noinline`
+
+The compiler keeps the lambda as a regular `Function0` object. It creates the object and executes it via `invoke()`, which adds allocation overhead and an extra method call.
 
 
 ## 44.What are Reified types in Kotlin?
