@@ -1928,405 +1928,307 @@ opr.minus(8)
 * Must have exactly one parameter
 * Makes code more readable (DSL-style code)
 * Commonly used in Kotlin libraries
+## 44. What are Reified Types in Kotlin?
 
-## 42. What is an Inline Function in Kotlin?
+In Kotlin, **reified types** are used with **inline functions** to allow access to a generic type parameter **at runtime**.
 
-An **inline function** is a function where the Kotlin compiler replaces the **function call with the actual function body** during compilation.
+Normally, the JVM performs **type erasure**, which means generic type information is removed during compilation. As a result, you cannot directly access the type parameter inside a normal generic function.
 
-This is mainly used to:
-- Reduce function call overhead
-- Improve performance (especially with lambdas)
-- Avoid creating extra objects for lambda expressions
+By marking a type parameter as `reified` inside an `inline` function, the Kotlin compiler substitutes the actual type at the call site, making it available at runtime.
 
+---
 
+## Why do we need `reified`?
 
-#### Example:
+Consider this normal generic function:
 
 ```kotlin
-inline fun test(block: () -> Unit) {
-    println("Before execution")
-    block()
-    println("After execution")
-}
-````
-
-
-
-#### Usage:
-
-```kotlin id="inline1"
-fun main() {
-    test {
-        println("Inside lambda")
-    }
+fun <T> printType() {
+    println(T::class) // ❌ Compilation Error
 }
 ```
 
+This doesn't compile because `T` does not exist at runtime due to **type erasure**.
 
+Error:
 
-#### 🔥 What happens internally?
-
-The function call:
-
-```kotlin
-test { println("Inside lambda") }
-```
-
-is transformed by the compiler into:
-
-```kotlin
-println("Before execution")
-println("Inside lambda")
-println("After execution")
-```
-
-
-
-#### Key Points:
-
-* Function body is copied at call site
-* No function call overhead
-* Lambda is directly executed
-* Improves performance in high-order functions
-* Commonly used in Kotlin standard library
-
-
-
-## 43. What is `noinline` in Kotlin?
-
-When a function is marked as `inline`, **all lambda parameters are inlined by default**.
-
-However, if you don’t want a specific lambda to be inlined, you use the `noinline` keyword.
-
-
-
-#### Example:
-
-```kotlin id="noinline1"
-inline fun test(
-    block1: () -> Unit,
-    noinline block2: () -> Unit
-) {
-    block1()
-    block2()
-}
-```
-
-
-
-#### Usage:
-
-```kotlin id="noinline2"
-fun main() {
-    test(
-        { println("Inline lambda") },
-        { println("Non-inline lambda") }
-    )
-}
-```
-
-
-
-### 🔥 What happens internally?
-
-#### 1. Inline lambda (`block1`)
-
-The lambda body is directly inserted:
-
-```kotlin
-println("Inline lambda")
-```
-
-
-
-#### 2. `noinline` lambda (`block2`)
-
-Kotlin treats it as a normal object:
-
-```kotlin
-val lambda = object : Function0<Unit> {
-    override fun invoke() {
-        println("Non-inline lambda")
-    }
-}
-```
-
-And it is called like:
-
-```kotlin
-lambda.invoke()
-```
-
-
-
-
-
-### 🔥 Difference Between inline and noinline
-
-| Feature                | inline     | noinline        |
-| ---------------------- | ---------- | --------------- |
-| Code replacement       | Yes        | No              |
-| Lambda object creation | No         | Yes             |
-| Execution style        | Direct     | `.invoke()`     |
-| Performance            | Faster     | Slight overhead |
-| Flexibility            | Restricted | More flexible   |
-
-
-
-### 🧠 Interview Summary
-
-* `inline` replaces function calls with actual code to improve performance
-* `noinline` prevents specific lambdas from being inlined
-* Internally, `noinline` lambdas are converted into function objects and called using `invoke()`
-
-
-# Kotlin `inline` vs `noinline` (Compilation Explained)
-
-The easiest way to understand `inline` and `noinline` is to compare the code **before** and **after** compilation.
-
-## Example
-
-```kotlin
-inline fun test(
-    block1: () -> Unit,
-    noinline block2: () -> Unit
-) {
-    println("Start")
-    block1()
-    block2()
-    println("End")
-}
-```
-
-### Call Site
-
-```kotlin
-fun main() {
-    test(
-        { println("Inline") },
-        { println("Noinline") }
-    )
-}
+```text
+Cannot use 'T' as reified type parameter.
+Use a class instead.
 ```
 
 ---
 
-# What happens for `block1` (`inline`)
+## Using `reified`
 
-Since `block1` is **inline**, the compiler copies its body directly into `main()`.
+```kotlin
+inline fun <reified T> printType() {
+    println(T::class)
+}
+```
 
-Conceptually, it becomes:
+### Usage
 
 ```kotlin
 fun main() {
-
-    // Body of test() copied here
-
-    println("Start")
-
-    // block1() replaced with lambda body
-    println("Inline")
-
-    // block2 is still a normal object
-    val block2 = object : Function0<Unit> {
-        override fun invoke() {
-            println("Noinline")
-        }
-    }
-
-    block2.invoke()
-
-    println("End")
+    printType<String>()
+    printType<Int>()
 }
 ```
 
-Notice there is **no call like**:
+### Output
 
-```kotlin
-block1.invoke()
+```text
+class kotlin.String
+class kotlin.Int
 ```
 
-or
-
-```kotlin
-block1()
-```
-
-The compiler literally pastes:
-
-```kotlin
-println("Inline")
-```
-
-at the call site.
+Since the function is `inline`, the compiler replaces the generic type with the actual type during compilation.
 
 ---
 
-# What happens for `block2` (`noinline`)
-
-The compiler **cannot** paste its code.
-
-Instead, it creates a function object.
-
-Conceptually:
-
-```kotlin
-val block2 = object : Function0<Unit> {
-    override fun invoke() {
-        println("Noinline")
-    }
-}
-```
-
-When `test()` wants to execute it:
-
-```kotlin
-block2.invoke()
-```
-
-This is a normal virtual function call.
-
----
-
-# Visual Comparison
-
-## `inline`
+## What happens internally?
 
 ### Source
 
 ```kotlin
-block1()
+printType<String>()
 ```
 
-### Compiler changes it to
+### Compiler conceptually transforms it into
 
 ```kotlin
-println("Inline")
+println(String::class)
 ```
 
-**Result:**
+Similarly,
 
-- No object created
-- No `invoke()` call
+```kotlin
+printType<Int>()
+```
+
+becomes
+
+```kotlin
+println(Int::class)
+```
+
+The compiler substitutes the actual type directly at the call site.
 
 ---
 
-## `noinline`
+## Real-World Example
 
-### Source
+Without `reified`, checking an object's type requires passing a `Class` or `KClass`.
 
-```kotlin
-block2()
-```
-
-### Compiler changes it to
+### Without `reified`
 
 ```kotlin
-val block2 = object : Function0<Unit> {
-    override fun invoke() {
-        println("Noinline")
-    }
+fun <T> isType(value: Any, clazz: Class<T>): Boolean {
+    return clazz.isInstance(value)
 }
 
-block2.invoke()
+fun main() {
+    println(isType("Hello", String::class.java))
+}
 ```
-
-**Result:**
-
-- Function object created
-- Extra `invoke()` method call
 
 ---
 
-# Memory Diagram
+### With `reified`
 
-## `inline`
+```kotlin
+inline fun <reified T> isType(value: Any): Boolean {
+    return value is T
+}
+
+fun main() {
+    println(isType<String>("Hello"))
+    println(isType<Int>("Hello"))
+}
+```
+
+### Output
 
 ```text
-main()
- │
- ├── println("Start")
- ├── println("Inline")
- ├── println("End")
+true
+false
 ```
 
-Nothing is allocated for the lambda.
+Notice that there is no need to pass `String::class.java`.
 
 ---
 
-## `noinline`
+## Another Practical Example
+
+Finding an object of a specific type from a list.
+
+```kotlin
+inline fun <reified T> List<Any>.findFirst(): T? {
+    return firstOrNull { it is T } as? T
+}
+
+fun main() {
+    val items = listOf(10, "Kotlin", 20.5)
+
+    val text = items.findFirst<String>()
+    println(text)
+}
+```
+
+### Output
 
 ```text
-Heap
-┌────────────────────────────┐
-│ Function0 object           │
-│ invoke()                   │
-│ println("Noinline")        │
-└────────────────────────────┘
-
-main()
- │
- ├── create Function0 object
- ├── invoke()
- └── return
+Kotlin
 ```
-
-A lambda object exists on the heap (or another allocation mechanism depending on JVM optimizations), and `invoke()` is called.
 
 ---
 
-# Why is `noinline` slower?
+## Compilation Concept
 
-There are two main costs:
-
-## 1. Object Creation
+### Without `reified`
 
 ```kotlin
-object : Function0<Unit> { ... }
+fun <T> check(value: Any) {
+    value is T   // ❌ Not allowed
+}
 ```
 
-A function object has to be created (unless the JVM optimizes it away).
+The compiler cannot determine what `T` represents after type erasure.
 
 ---
 
-## 2. Extra Method Call
-
-Instead of directly executing:
+### With `reified`
 
 ```kotlin
-println("Inline")
+inline fun <reified T> check(value: Any) {
+    println(value is T)
+}
 ```
 
-the program executes:
+Calling
 
 ```kotlin
-lambda.invoke()
+check<String>("Hello")
 ```
 
-This introduces:
+is conceptually compiled as
 
-- An extra function call
-- Typically a virtual method dispatch
+```kotlin
+println("Hello" is String)
+```
+
+The actual type replaces `T` during compilation.
 
 ---
 
-# Quick Interview Explanation
+## Requirements for `reified`
 
-### `inline`
+A reified type parameter has two requirements:
 
-The compiler replaces the lambda call with the lambda's actual code. No lambda object is created, and there is no `invoke()` call.
+1. The function **must be `inline`**.
+2. The type parameter must be marked with the **`reified`** keyword.
 
-### `noinline`
+Example:
 
-The compiler keeps the lambda as a regular `Function0` object. It creates the object and executes it via `invoke()`, which adds allocation overhead and an extra method call.
+```kotlin
+inline fun <reified T> example() {
+    println(T::class)
+}
+```
 
+The following is **not allowed**:
 
-## 44.What are Reified types in Kotlin?
+```kotlin
+fun <reified T> example() { } // ❌ Error
+```
 
-In Kotlin, **reified types** are used with **inline functions** to allow access to the type parameter at runtime.
+---
 
-Normally, due to **type erasure in JVM**, generic type information is not available at runtime. But with `reified`, Kotlin preserves the type inside an inline function.
+## Common Uses of `reified`
 
+- Runtime type checking (`is T`)
+- Accessing `T::class`
+- Accessing `T::class.java`
+- Creating generic utility functions
+- JSON parsing libraries
+- Dependency Injection frameworks
+- Android ViewModel and Fragment helpers
+
+---
+
+## Difference Between Normal Generics and Reified Types
+
+| Feature | Normal Generic | Reified Generic |
+|---------|----------------|-----------------|
+| Runtime type available | ❌ No | ✅ Yes |
+| Type erasure | Yes | No (inside inline function) |
+| Can use `is T` | ❌ No | ✅ Yes |
+| Can use `T::class` | ❌ No | ✅ Yes |
+| Requires `inline` | ❌ No | ✅ Yes |
+
+---
+
+## Memory / Compilation Diagram
+
+### Normal Generic
+
+```text
+Source
+   │
+   ▼
+fun <T> check()
+
+   │
+   ▼
+Compile
+
+   │
+   ▼
+T removed (Type Erasure)
+
+Runtime
+   │
+   ▼
+Type information unavailable
+```
+
+---
+
+### Reified Generic
+
+```text
+Source
+   │
+   ▼
+inline fun <reified T> check()
+
+   │
+   ▼
+Compile
+
+   │
+   ▼
+check<String>()
+
+becomes
+
+println(String::class)
+
+Runtime
+   │
+   ▼
+Actual type is available
+```
+
+---
+
+## Quick Interview Explanation
+
+- The JVM normally removes generic type information during compilation (**type erasure**).
+- A **reified** type preserves the generic type inside an **inline** function.
+- Since the function is inlined, the compiler replaces the type parameter with the actual type at the call site.
+- This allows operations such as `is T`, `as T`, `T::class`, and `T::class.java`, which are impossible with normal generic functions.
 
 ### 🔹 Why do we need `reified`?
 
